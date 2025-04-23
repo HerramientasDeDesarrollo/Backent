@@ -1,13 +1,13 @@
-package com.example.guiavirtual;
+package com.example.entrevista;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class GuiaVirtualApplicationTests {
+class EntrevistaApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+	@Test
+	void contextLoads() {
+	}
 
 }
