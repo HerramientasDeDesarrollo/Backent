@@ -16,31 +16,34 @@ public class HercaiController {
         this.hercaiService = hercaiService;
     }
 
-    @GetMapping("/iniciar")
-    public ResponseEntity<PreguntaResponse> iniciarEntrevista() {
-        PreguntaResponse preguntas = hercaiService.obtenerPreguntas();
-        return ResponseEntity.ok(preguntas);
+    @PostMapping("/iniciar")
+    public ResponseEntity<?> iniciarEntrevista(@RequestBody Map<String, Object> request) {
+        String puesto = (String) request.get("puesto");
+        Integer limit = request.get("limit") != null ? (Integer) request.get("limit") : 10;
+        if (puesto == null || puesto.isBlank()) {
+            return ResponseEntity.badRequest().body("El puesto es obligatorio.");
+        }
+        try {
+            // Ahora retorna una lista de preguntas
+            var preguntas = hercaiService.obtenerPreguntas(puesto, limit);
+            return ResponseEntity.ok(Map.of("preguntas", preguntas));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error interno: " + e.getMessage());
+        }
     }
 
     @PostMapping("/evaluar")
-    public ResponseEntity<?> evaluarRespuesta(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> evaluarRespuesta(@RequestBody Map<String, Object> request) {
         try {
-            // Obtener pregunta y respuesta del cuerpo de la solicitud
-            String pregunta = request.get("pregunta");
-            String respuesta = request.get("respuesta");
-
-            // Validar que ambos campos estén presentes
+            String pregunta = (String) request.get("pregunta");
+            String respuesta = (String) request.get("respuesta");
             if (pregunta == null || respuesta == null) {
                 return ResponseEntity.badRequest().body("La pregunta y la respuesta son obligatorias.");
             }
-
-            // Llamar al servicio para evaluar la respuesta
-            Map<String, Object> resultado = hercaiService.evaluarRespuesta(pregunta, respuesta);
-
-            // Devolver el resultado al cliente
+            // Llama al servicio con los nombres correctos para la nueva API
+            var resultado = hercaiService.evaluarRespuesta(pregunta, respuesta);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            // Manejar cualquier excepción y devolver un error 500 con el mensaje
             return ResponseEntity.status(500).body("Error interno: " + e.getMessage());
         }
     }

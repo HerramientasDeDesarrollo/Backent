@@ -1,6 +1,7 @@
 package com.example.entrevista.model;
 
 import jakarta.persistence.*;
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -9,44 +10,38 @@ public class Entrevista {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 1000)
-    private String preguntas;
+    private String titulo;
 
-    @Column(length = 1000) 
-    private String respuestas;
+    private String puesto;
 
-    private String claridadEstructura;
-    private String dominioTecnico;
-    private String pertinencia;
-    private String comunicacionSeguridad;
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 
-    @Column(length = 1000) 
-    private String fortalezas;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date fechaCreacion;
 
-    @Column(length = 1000) 
-    private String oportunidadesMejora;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date fechaExpiracion;
 
-    private Double puntuacionFinal;
+    private boolean activo;
 
-    // Constructor vacío
+    @OneToMany(mappedBy = "entrevista", cascade = CascadeType.ALL)
+    private List<Pregunta> preguntas;
+
     public Entrevista() {}
 
-    // Constructor completo
-    public Entrevista(String preguntas, String respuestas, String claridadEstructura, String dominioTecnico,
-                      String pertinencia, String comunicacionSeguridad, String fortalezas,
-                      String oportunidadesMejora, Double puntuacionFinal) {
+    public Entrevista(String titulo, String puesto, Empresa empresa, Date fechaCreacion, Date fechaExpiracion,
+                      boolean activo, List<Pregunta> preguntas) {
+        this.titulo = titulo;
+        this.puesto = puesto;
+        this.empresa = empresa;
+        this.fechaCreacion = fechaCreacion;
+        this.fechaExpiracion = fechaExpiracion;
+        this.activo = activo;
         this.preguntas = preguntas;
-        this.respuestas = respuestas;
-        this.claridadEstructura = claridadEstructura;
-        this.dominioTecnico = dominioTecnico;
-        this.pertinencia = pertinencia;
-        this.comunicacionSeguridad = comunicacionSeguridad;
-        this.fortalezas = fortalezas;
-        this.oportunidadesMejora = oportunidadesMejora;
-        this.puntuacionFinal = puntuacionFinal;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -55,75 +50,59 @@ public class Entrevista {
         this.id = id;
     }
 
-    public String getPreguntas() {
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getPuesto() {
+        return puesto;
+    }
+
+    public void setPuesto(String puesto) {
+        this.puesto = puesto;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
+    }
+
+    public Date getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(Date fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public Date getFechaExpiracion() {
+        return fechaExpiracion;
+    }
+
+    public void setFechaExpiracion(Date fechaExpiracion) {
+        this.fechaExpiracion = fechaExpiracion;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public List<Pregunta> getPreguntas() {
         return preguntas;
     }
 
-    public void setPreguntas(String preguntas) {
+    public void setPreguntas(List<Pregunta> preguntas) {
         this.preguntas = preguntas;
-    }
-
-    public String getRespuestas() {
-        return respuestas;
-    }
-
-    public void setRespuestas(String respuestas) {
-        this.respuestas = respuestas;
-    }
-
-    public String getClaridadEstructura() {
-        return claridadEstructura;
-    }
-
-    public void setClaridadEstructura(String claridadEstructura) {
-        this.claridadEstructura = claridadEstructura;
-    }
-
-    public String getDominioTecnico() {
-        return dominioTecnico;
-    }
-
-    public void setDominioTecnico(String dominioTecnico) {
-        this.dominioTecnico = dominioTecnico;
-    }
-
-    public String getPertinencia() {
-        return pertinencia;
-    }
-
-    public void setPertinencia(String pertinencia) {
-        this.pertinencia = pertinencia;
-    }
-
-    public String getComunicacionSeguridad() {
-        return comunicacionSeguridad;
-    }
-
-    public void setComunicacionSeguridad(String comunicacionSeguridad) {
-        this.comunicacionSeguridad = comunicacionSeguridad;
-    }
-
-    public String getFortalezas() {
-        return fortalezas;
-    }
-
-    public void setFortalezas(String fortalezas) {
-        this.fortalezas = fortalezas;
-    }
-
-    public String getOportunidadesMejora() {
-        return oportunidadesMejora;
-    }
-
-    public void setOportunidadesMejora(String oportunidadesMejora) {
-        this.oportunidadesMejora = oportunidadesMejora;
-    }
-
-    public Double getPuntuacionFinal() {
-        return puntuacionFinal;
-    }
-
-    public void setPuntuacionFinal(Double puntuacionFinal) {
-        this.puntuacionFinal = puntuacionFinal;
     }
 }

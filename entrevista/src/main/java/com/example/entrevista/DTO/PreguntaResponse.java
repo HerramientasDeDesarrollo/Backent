@@ -5,12 +5,11 @@ import java.util.Objects;
 
 public class PreguntaResponse {
     private boolean success;
-    private List<Pregunta> questions;
+    private List<String> questions;
 
-    // Constructores
     public PreguntaResponse() {}
 
-    public PreguntaResponse(boolean success, List<Pregunta> questions) {
+    public PreguntaResponse(boolean success, List<String> questions) {
         this.success = success;
         this.questions = questions;
     }
@@ -23,11 +22,11 @@ public class PreguntaResponse {
         this.success = success;
     }
 
-    public List<Pregunta> getQuestions() {
+    public List<String> getQuestions() {
         return questions;
     }
 
-    public void setQuestions(List<Pregunta> questions) {
+    public void setQuestions(List<String> questions) {
         this.questions = questions;
     }
 
