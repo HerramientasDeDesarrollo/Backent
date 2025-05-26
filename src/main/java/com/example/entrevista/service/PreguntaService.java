@@ -107,6 +107,7 @@ public class PreguntaService {
             double costPerThousandTokens = 0.002;
             double cost = (totalTokens / 1000.0) * costPerThousandTokens;
             System.out.printf("Costo aproximado: $%.6f USD%n", cost);
+            System.out.println("Costo a soles: S/ " + (cost * 3.8)); // Asumiendo 1 USD = 3.8 PEN
         } else {
             System.out.println("Información de tokens no disponible en la respuesta.");
         }
