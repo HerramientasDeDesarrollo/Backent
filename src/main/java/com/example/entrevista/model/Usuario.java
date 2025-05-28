@@ -22,10 +22,16 @@ public class Usuario implements UserDetails {
     private Long id;
 
     private String nombre;
-    private String apellido;
-    private String dni;
-    private String telefono;
+    private String apellidoMaterno;
+    private String apellidoPaterno;
+    @Column(unique = true)
+    private int dni;
+    @Column(unique = true)
+    private int telefono;
+
+    @Column(unique = true)
     private String correo;
+
     private String password;
 
     @Temporal(TemporalType.TIMESTAMP)

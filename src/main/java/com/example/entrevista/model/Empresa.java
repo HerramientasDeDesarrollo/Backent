@@ -18,9 +18,13 @@ public class Empresa {
     private Long id;
 
     private String nombre;
-    private String email;
-    private String telefono;
-
+    
+    @Column(unique = true)
+    private String correo;
+    
+    private int telefono;
+    private String password;
+    
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaRegistro;
 

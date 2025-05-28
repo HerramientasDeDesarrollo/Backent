@@ -1,5 +1,6 @@
 package com.example.entrevista.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,4 +23,8 @@ public class Pregunta {
     @JoinColumn(name = "entrevista_id")
     private Entrevista entrevista;
 
+    @ManyToOne
+    @JoinColumn(name = "postulacion_id")
+    @JsonIgnore 
+    private Postulacion postulacion;
 }

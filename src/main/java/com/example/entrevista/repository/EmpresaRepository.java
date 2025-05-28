@@ -1,9 +1,10 @@
 package com.example.entrevista.repository;
 
+import com.example.entrevista.model.Empresa;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.entrevista.model.Empresa;
+import java.util.Optional;
 
 public interface EmpresaRepository extends JpaRepository<Empresa, Long> {
-
+    Optional<Empresa> findByCorreo(String correo);
 }

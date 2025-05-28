@@ -29,4 +29,12 @@ public class EntrevistaService {
     public void deleteById(Long id) {
         entrevistaRepository.deleteById(id);
     }
+
+    public void activarEntrevista(Entrevista entrevista) {
+        if (!entrevista.isActivo()) {
+            entrevista.setCiclo(entrevista.getCiclo() + 1);
+            entrevista.setActivo(true);
+            entrevistaRepository.save(entrevista);
+        }
+    }
 }

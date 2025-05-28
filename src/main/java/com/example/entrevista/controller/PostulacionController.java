@@ -1,5 +1,6 @@
 package com.example.entrevista.controller;
 
+import com.example.entrevista.DTO.HistorialPostulacionDTO;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.service.PostulacionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/postulaciones")
@@ -56,5 +60,23 @@ public class PostulacionController {
     @GetMapping
     public ResponseEntity<?> verTodasLasPostulaciones() {
         return null;
+    }
+
+    @GetMapping("/historial/{usuarioId}/{entrevistaId}")
+    public List<HistorialPostulacionDTO> historialPorUsuarioYEntrevista(@PathVariable Long usuarioId, @PathVariable Long entrevistaId) {
+        List<Postulacion> postulaciones = postulacionService.obtenerHistorialPorUsuarioYEntrevista(usuarioId, entrevistaId);
+        List<HistorialPostulacionDTO> historial = new ArrayList<>();
+        for (Postulacion p : postulaciones) {
+            HistorialPostulacionDTO dto = new HistorialPostulacionDTO();
+            dto.setCiclo(p.getCiclo());
+            dto.setFechaPostulacion(p.getFechaPostulacion());
+            dto.setEstado(p.getEstado());
+            // Si hay resultados, toma el primero (o el que prefieras)
+            if (p.getResultados() != null && !p.getResultados().isEmpty()) {
+                dto.setPuntuacionFinal(p.getResultados().get(0).getPuntuacionFinal());
+            }
+            historial.add(dto);
+        }
+        return historial;
     }
 }

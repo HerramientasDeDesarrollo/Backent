@@ -1,5 +1,6 @@
 package com.example.entrevista.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,6 +32,11 @@ public class Postulacion {
     private String estado;
 
     @OneToMany(mappedBy = "postulacion", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Pregunta> preguntas;
+
+    @OneToMany(mappedBy = "postulacion", cascade = CascadeType.ALL)
     private List<Resultado> resultados;
 
+    private int ciclo;
 }

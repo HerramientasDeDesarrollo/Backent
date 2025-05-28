@@ -31,9 +31,13 @@ public class Entrevista {
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaExpiracion;
 
+    private String dificultad;
+    
     private boolean activo;
 
     @OneToMany(mappedBy = "entrevista", cascade = CascadeType.ALL)
     private List<Pregunta> preguntas;
+
+    private int ciclo = 1;
 
 }
