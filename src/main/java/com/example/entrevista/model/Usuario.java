@@ -25,7 +25,7 @@ public class Usuario implements UserDetails {
     private String apellidoMaterno;
     private String apellidoPaterno;
     @Column(unique = true)
-    private int dni;
+    private String dni;
     @Column(unique = true)
     private int telefono;
 
