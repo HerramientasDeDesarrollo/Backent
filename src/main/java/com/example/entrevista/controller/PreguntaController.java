@@ -18,8 +18,19 @@ public class PreguntaController {
     @PreAuthorize("hasRole('EMPRESA')")
     @PostMapping("/generar")
     public ResponseEntity<?> generarPreguntas(@RequestBody PreguntaRequest request) {
-        // lógica para generar preguntas usando IA
-        return null;
+        try {
+            // Validar que la dificultad esté en el rango correcto
+            if (request.getDificultad() < 1 || request.getDificultad() > 10) {
+                return ResponseEntity.badRequest()
+                    .body("La dificultad debe estar entre 1 y 10");
+            }
+            
+            PreguntaResponse response = preguntaService.generarPreguntas(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body("Error al generar preguntas: " + e.getMessage());
+        }
     }
 
 }

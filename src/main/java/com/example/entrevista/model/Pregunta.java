@@ -18,6 +18,8 @@ public class Pregunta {
     private int numero;
 
     private String textoPregunta;
+    
+    private int dificultad; // Nivel de dificultad de 1 a 10
 
     @ManyToOne
     @JoinColumn(name = "entrevista_id")

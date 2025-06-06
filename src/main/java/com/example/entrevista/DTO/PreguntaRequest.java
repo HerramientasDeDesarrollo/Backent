@@ -3,9 +3,9 @@ package com.example.entrevista.DTO;
 public class PreguntaRequest {
     private String puesto;
     private Long idEntrevista;
+    private int dificultad; // Valor del 1 al 10
 
     public PreguntaRequest() {}
-
 
     public String getPuesto() {
         return puesto;
@@ -23,4 +23,11 @@ public class PreguntaRequest {
         this.idEntrevista = idEntrevista;
     }
 
+    public int getDificultad() {
+        return dificultad;
+    }
+
+    public void setDificultad(int dificultad) {
+        this.dificultad = dificultad;
+    }
 }
