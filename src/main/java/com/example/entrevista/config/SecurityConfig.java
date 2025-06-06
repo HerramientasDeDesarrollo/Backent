@@ -70,6 +70,7 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider())
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/auth/**").permitAll()
+                    .requestMatchers("/api/usuarios/registro").permitAll() // <-- Permitir registro público
                     .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
                     .requestMatchers("/api/empresas/**").hasRole("ADMIN")
                     .requestMatchers("/api/entrevistas/**").hasAnyRole("ADMIN", "EMPRESA")

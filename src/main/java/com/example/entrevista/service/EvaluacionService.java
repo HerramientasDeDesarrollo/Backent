@@ -1,9 +1,13 @@
 package com.example.entrevista.service;
 
 import com.example.entrevista.DTO.EvaluacionResponse;
+import com.example.entrevista.model.Evaluacion;
+import com.example.entrevista.repository.EvaluationRepository;
+import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.DTO.EvaluacionRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -12,6 +16,12 @@ public class EvaluacionService {
 
     private final WebClient webClient;
     private static final double COST_PER_1K_TOKENS = 0.002; // gpt-3.5-turbo
+
+    @Autowired
+    private EvaluationRepository evaluacionRepository;
+
+    @Autowired
+    private PostulacionRepository postulacionRepository;
 
     public EvaluacionService(WebClient openAIWebClient) {
         this.webClient = openAIWebClient;
@@ -80,8 +90,19 @@ public class EvaluacionService {
             evaluacionResponse.setComunicacionSeguridad((Integer) evaluacionJson.get("comunicacion_seguridad"));
             evaluacionResponse.setFortalezas((List<String>) evaluacionJson.get("fortalezas"));
             evaluacionResponse.setOportunidadesMejora((List<String>) evaluacionJson.get("oportunidades_mejora"));
-            evaluacionResponse.setPuntuacionFinal(request.getValorPregunta()); // Usar el valor de la pregunta
-            
+            evaluacionResponse.setPuntuacionFinal(request.getValorPregunta());
+
+            // GUARDAR EN LA BASE DE DATOS SOLO LOS CAMPOS NECESARIOS
+            Evaluacion evaluacion = new Evaluacion();
+            evaluacion.setFechaEvaluacion(new Date());
+            evaluacion.setEvaluacionCompleta(content);
+            evaluacion.setEstado("completada");
+
+            if (request.getIdPostulacion() != null) {
+                evaluacion.setPostulacion(postulacionRepository.findById(request.getIdPostulacion()).orElse(null));
+            }
+
+            evaluacionRepository.save(evaluacion);
 
             return evaluacionResponse;
 

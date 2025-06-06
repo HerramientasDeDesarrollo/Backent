@@ -1,10 +1,7 @@
 package com.example.entrevista.repository;
 
+import com.example.entrevista.model.Evaluacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.entrevista.model.Respuesta;
-
-public interface EvaluationRepository extends JpaRepository<Respuesta, Long>{
-
-    
+public interface EvaluationRepository extends JpaRepository<Evaluacion, Long> {
 }
