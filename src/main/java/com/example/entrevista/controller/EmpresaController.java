@@ -3,7 +3,6 @@ package com.example.entrevista.controller;
 import com.example.entrevista.model.Empresa;
 import com.example.entrevista.service.EmpresaService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

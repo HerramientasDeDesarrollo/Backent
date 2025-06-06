@@ -1,7 +1,6 @@
 package com.example.entrevista.controller;
 
 
-import com.example.entrevista.service.RespuestaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 public class RespuestaController {
 
     @Autowired
-    private RespuestaService respuestaService;
 
     // USUARIO puede ver solo sus propias respuestas
     @PreAuthorize("hasRole('USUARIO')")

@@ -3,10 +3,6 @@ package com.example.entrevista.controller;
 import com.example.entrevista.DTO.EvaluacionRequest;
 import com.example.entrevista.DTO.EvaluacionResponse;
 import com.example.entrevista.service.EvaluacionService;
-import com.example.entrevista.service.ResultadoService;
-import com.example.entrevista.service.PostulacionService;
-import com.example.entrevista.model.Resultado;
-import com.example.entrevista.model.Postulacion;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +16,6 @@ public class EvaluacionController {
     @Autowired
     private EvaluacionService evaluacionService;
 
-    @Autowired
-    private ResultadoService resultadoService;
-
-    @Autowired
-    private PostulacionService postulacionService;
 
     // USUARIO puede evaluar una respuesta simple
     @PreAuthorize("hasRole('USUARIO')")

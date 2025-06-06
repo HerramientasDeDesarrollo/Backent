@@ -4,8 +4,10 @@ import com.example.entrevista.DTO.PreguntaRequest;
 import com.example.entrevista.DTO.PreguntaResponse;
 import com.example.entrevista.repository.PreguntaRepository;
 import com.example.entrevista.repository.EntrevistaRepository;
+import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.model.Entrevista;
 import com.example.entrevista.model.Pregunta;
+import com.example.entrevista.model.Postulacion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,6 +28,9 @@ public class PreguntaService {
 
     @Autowired
     private EntrevistaRepository entrevistaRepository;
+
+    @Autowired
+    private PostulacionRepository postulacionRepository;
 
     public PreguntaResponse generarPreguntas(PreguntaRequest request) {
         String nivelDificultad = obtenerDescripcionDificultad(request.getDificultad());
@@ -61,6 +66,7 @@ public class PreguntaService {
               { "type": "tipo_de_pregunta", "question": "Texto de la pregunta", "score": valor_en_porcentaje },
               ...
             ]
+            RECUERDA: La respuesta completa debe estar en ESPAÑOL. No mezcles idiomas.
             """.formatted(request.getPuesto(), request.getDificultad(), nivelDificultad, 
                          obtenerInstruccionesDificultad(request.getDificultad()));
 
@@ -87,18 +93,39 @@ public class PreguntaService {
         Entrevista entrevista = entrevistaRepository.findById(request.getIdEntrevista())
             .orElseThrow(() -> new RuntimeException("Entrevista no encontrada"));
 
+        // Busca la postulación (si se proporciona)
+        Postulacion postulacion = null;
+        if (request.getIdPostulacion() != null) {
+            postulacion = postulacionRepository.findById(request.getIdPostulacion())
+                .orElseThrow(() -> new RuntimeException("Postulación no encontrada"));
+        }
+
         // Guarda cada pregunta generada
         int numero = 1;
         for (PreguntaResponse.PreguntaDTO dto : preguntas) {
             Pregunta pregunta = new Pregunta();
             pregunta.setNumero(numero++);
             pregunta.setTextoPregunta(dto.getQuestion());
-            pregunta.setDificultad(request.getDificultad()); // Guardar el nivel de dificultad
+            pregunta.setDificultad(request.getDificultad());
             pregunta.setEntrevista(entrevista);
+            pregunta.setPostulacion(postulacion); // Asignar la postulación
             preguntaRepository.save(pregunta);
         }
 
         return response;
+    }
+
+    // Métodos para obtener preguntas
+    public List<Pregunta> obtenerPreguntasPorEntrevista(Long entrevistaId) {
+        return preguntaRepository.findByEntrevistaId(entrevistaId);
+    }
+
+    public List<Pregunta> obtenerPreguntasPorPostulacion(Long postulacionId) {
+        return preguntaRepository.findByPostulacionId(postulacionId);
+    }
+
+    public List<Pregunta> obtenerPreguntasPorEntrevistaYPostulacion(Long entrevistaId, Long postulacionId) {
+        return preguntaRepository.findByEntrevistaIdAndPostulacionId(entrevistaId, postulacionId);
     }
 
     private String enviarAOpenAI(String prompt) {

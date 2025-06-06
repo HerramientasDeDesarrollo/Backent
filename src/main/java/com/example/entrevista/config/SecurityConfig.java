@@ -74,7 +74,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
                     .requestMatchers("/api/empresas/**").hasRole("ADMIN")
                     .requestMatchers("/api/entrevistas/**").hasAnyRole("ADMIN", "EMPRESA")
-                    .requestMatchers("/api/preguntas/generar").hasRole("EMPRESA")
+                    .requestMatchers("/api/preguntas/generar").hasAnyRole("EMPRESA", "USUARIO")
                     .requestMatchers("/api/postulaciones/**").hasAnyRole("ADMIN", "EMPRESA", "USUARIO")
                     .anyRequest().authenticated();
             })
