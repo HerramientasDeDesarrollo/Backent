@@ -32,9 +32,24 @@ public class ConvocatoriaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Getting convocatorias by empresa ID
+    @GetMapping("/empresa/{empresaId}")
+    public ResponseEntity<List<Convocatoria>> buscarPorEmpresa(@PathVariable Long empresaId) {
+        List<Convocatoria> convocatorias = convocatoriaService.buscarPorEmpresa(empresaId);
+        return ResponseEntity.ok(convocatorias);
+    }
+
+    // Getting active convocatorias
+    @GetMapping("/activas")
+    public ResponseEntity<List<Convocatoria>> listarActivas() {
+        List<Convocatoria> convocatorias = convocatoriaService.listarActivas();
+        return ResponseEntity.ok(convocatorias);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         convocatoriaService.eliminarConvocatoria(id);
         return ResponseEntity.ok().build();
     }
+    
 }

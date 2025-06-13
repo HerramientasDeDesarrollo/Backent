@@ -29,4 +29,11 @@ public class ConvocatoriaService {
     public void eliminarConvocatoria(Long id) {
         convocatoriaRepository.deleteById(id);
     }
+    public List<Convocatoria> buscarPorEmpresa(Long empresaId) {
+    return convocatoriaRepository.findByEmpresaId(empresaId);
+    }
+
+public List<Convocatoria> listarActivas() {
+    return convocatoriaRepository.findByActivoTrue();
+    }
 }
