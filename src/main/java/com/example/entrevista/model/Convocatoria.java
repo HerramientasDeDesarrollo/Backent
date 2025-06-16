@@ -23,6 +23,7 @@ public class Convocatoria {
     private boolean activo; // Indica si la convocatoria está activa o no
     private String fechaPublicacion; // Fecha de publicación en formato ISO 8601 (YYYY-MM-DD)
     private String fechaCierre; // Fecha de cierre en formato ISO 8601 (YYYY-MM-DD)
+    private int dificultad; // Nivel de dificultad de la convocatoria
 
     @ManyToOne
     @JoinColumn(name = "empresa_id")

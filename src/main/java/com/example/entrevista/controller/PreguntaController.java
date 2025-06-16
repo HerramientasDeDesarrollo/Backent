@@ -24,12 +24,6 @@ public class PreguntaController {
                 return ResponseEntity.badRequest().body("El ID de postulación es obligatorio");
             }
             
-            // Validación de dificultad
-            if (request.getDificultad() < 1 || request.getDificultad() > 10) {
-                return ResponseEntity.badRequest()
-                    .body("La dificultad debe estar entre 1 y 10");
-            }
-            
             PreguntaResponse response = preguntaService.generarPreguntas(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

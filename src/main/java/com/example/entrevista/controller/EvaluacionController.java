@@ -6,6 +6,7 @@ import com.example.entrevista.service.EvaluacionService;
 import com.example.entrevista.model.Pregunta;
 import com.example.entrevista.repository.PreguntaRepository;
 import com.example.entrevista.model.Convocatoria;
+import com.example.entrevista.model.Evaluacion;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/evaluaciones")
-@CrossOrigin(origins = "*")  // Enable CORS for frontend integration
 public class EvaluacionController {
 
     private static final Logger logger = LoggerFactory.getLogger(EvaluacionController.class);
@@ -109,8 +111,9 @@ public class EvaluacionController {
         request.setQuestion(pregunta.getTextoPregunta());
         
         // Establecer el valor de la pregunta usando el score guardado en la entidad
-        // Si no tiene score, se usa la dificultad como valor por defecto
-        int valorPregunta = pregunta.getScore() > 0 ? pregunta.getScore() : pregunta.getDificultad() * 10;
+        // Si no tiene score, se usa la dificultad de la convocatoria como valor por defecto
+        int valorPregunta = pregunta.getScore() > 0 ? pregunta.getScore() : 
+                           (pregunta.getConvocatoria() != null ? pregunta.getConvocatoria().getDificultad() * 10 : 10);
         request.setValorPregunta(valorPregunta);
         
         // Obtener la postulación asociada con la pregunta
@@ -164,13 +167,67 @@ public class EvaluacionController {
 
     @GetMapping("/mis-resultados/{postulacionId}")
     public ResponseEntity<?> verMisResultados(@PathVariable Long postulacionId) {
-        // Aquí podrías implementar la lógica para obtener resultados por postulación
-        return ResponseEntity.ok("Resultados para postulación: " + postulacionId);
+        try {
+            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);
+            
+            if (evaluaciones.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "mensaje", "No se encontraron evaluaciones para esta postulación",
+                    "evaluaciones", evaluaciones
+                ));
+            }
+            
+            // Calcular estadísticas generales si es necesario
+            double puntajePromedio = evaluaciones.stream()
+                .mapToDouble(e -> e.getPuntajeTotal() != null ? e.getPuntajeTotal() : 0)
+                .average()
+                .orElse(0);
+                
+            double porcentajeTotal = evaluaciones.stream()
+                .mapToDouble(e -> e.getPorcentajeObtenido() != null ? e.getPorcentajeObtenido() : 0)
+                .sum();
+                
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Resultados encontrados",
+                "puntajePromedio", Math.round(puntajePromedio * 100) / 100.0,
+                "porcentajeTotal", Math.round(porcentajeTotal * 100) / 100.0,
+                "totalEvaluaciones", evaluaciones.size(),
+                "evaluaciones", evaluaciones
+            ));
+        } catch (Exception e) {
+            logger.error("Error al obtener resultados para postulación {}: {}", postulacionId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error al procesar la solicitud: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/por-entrevista/{entrevistaId}")
     public ResponseEntity<?> verResultadosPorEntrevista(@PathVariable Long entrevistaId) {
-        // Aquí podrías implementar la lógica para obtener resultados por entrevista
-        return ResponseEntity.ok("Resultados para entrevista: " + entrevistaId);
+        try {
+            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorEntrevista(entrevistaId);
+            
+            if (evaluaciones.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "mensaje", "No se encontraron evaluaciones para este entrevistador",
+                    "evaluaciones", evaluaciones
+                ));
+            }
+            
+            // Agrupar evaluaciones por postulación para presentar resultados organizados
+            Map<Long, List<Evaluacion>> evaluacionesPorPostulacion = evaluaciones.stream()
+                .collect(Collectors.groupingBy(e -> 
+                    e.getPostulacion() != null ? e.getPostulacion().getId() : 0L));
+                    
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Resultados encontrados",
+                "totalPostulaciones", evaluacionesPorPostulacion.size(),
+                "totalEvaluaciones", evaluaciones.size(),
+                "resultadosPorPostulacion", evaluacionesPorPostulacion
+            ));
+        } catch (Exception e) {
+            logger.error("Error al obtener resultados para entrevistador {}: {}", entrevistaId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error al procesar la solicitud: " + e.getMessage()));
+        }
     }
 }

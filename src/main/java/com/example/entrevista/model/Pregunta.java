@@ -19,7 +19,9 @@ public class Pregunta {
 
     private String textoPregunta;
     
-    private int dificultad; // Nivel de dificultad de 1 a 10
+    private String tipo; // Tipo de pregunta (technical_knowledge, experience, etc.)
+    
+    private String tipoLegible; // Versión en español más legible (ej. "Conocimiento Técnico")
     
     private int score; // Valor de la pregunta en porcentaje
 

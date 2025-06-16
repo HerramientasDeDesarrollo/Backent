@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PreguntaRequest {
     private Long idPostulacion; // Para identificar la postulación
-    private int dificultad;    // Valor del 1 al 10
     
     // Estos campos se calcularán internamente
     private String puesto;     // Se obtendrá de la convocatoria asociada a la postulación

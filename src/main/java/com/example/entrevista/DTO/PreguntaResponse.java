@@ -4,6 +4,7 @@ public class PreguntaResponse {
 
     private boolean success;
     private java.util.List<PreguntaDTO> questions;
+    private String mensaje; // Añadido para el mensaje
 
     // Getters y setters
     public boolean isSuccess() {
@@ -22,8 +23,17 @@ public class PreguntaResponse {
         this.questions = questions;
     }
 
+    public String getMensaje() { // Getter para el mensaje
+        return mensaje;
+    }
+
+    public void setMensaje(String mensaje) { // Setter para el mensaje
+        this.mensaje = mensaje;
+    }
+
     public static class PreguntaDTO {
         private String type;
+        private String typeReadable; // Versión legible del tipo
         private String question;
         private int score;  // porcentaje asignado a la pregunta
 
@@ -34,6 +44,14 @@ public class PreguntaResponse {
 
         public void setType(String type) {
             this.type = type;
+        }
+        
+        public String getTypeReadable() {
+            return typeReadable;
+        }
+
+        public void setTypeReadable(String typeReadable) {
+            this.typeReadable = typeReadable;
         }
 
         public String getQuestion() {

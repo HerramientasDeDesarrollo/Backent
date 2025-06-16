@@ -235,4 +235,8 @@ public class EvaluacionService {
     public List<Evaluacion> obtenerEvaluacionesPorPregunta(Long preguntaId) {
         return evaluacionRepository.findByPreguntaId(preguntaId);
     }
+
+    public List<Evaluacion> obtenerEvaluacionesPorEntrevista(Long entrevistaId) {
+        return evaluacionRepository.findByEntrevistaId(entrevistaId);
+    }
 }

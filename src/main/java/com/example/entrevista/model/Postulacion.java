@@ -30,4 +30,7 @@ public class Postulacion {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoPostulacion estado = EstadoPostulacion.PENDIENTE; // Valor por defecto
+    
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean preguntasGeneradas = false; // Nuevo campo para rastrear si se han generado preguntas
 }
