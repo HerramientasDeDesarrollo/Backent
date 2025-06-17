@@ -56,4 +56,27 @@ public class PostulacionService {
     public List<Postulacion> listarPorConvocatoriaYEstado(Long convocatoriaId, EstadoPostulacion estado) {
         return postulacionRepository.findByConvocatoriaIdAndEstado(convocatoriaId, estado);
     }
+    
+    // Método para actualizar una postulación completa
+    public Postulacion actualizarPostulacion(Long id, Postulacion postulacion) {
+        return postulacionRepository.findById(id)
+                .map(postulacionExistente -> {
+                    // Mantener la ID original
+                    postulacion.setId(id);
+                    // Asegurarse de que no modificamos el estado de generación de preguntas
+                    postulacion.setPreguntasGeneradas(postulacionExistente.isPreguntasGeneradas());
+                    return postulacionRepository.save(postulacion);
+                })
+                .orElseThrow(() -> new RuntimeException("Postulación no encontrada con ID: " + id));
+    }
+
+    // Método para eliminar una postulación
+    public void eliminarPostulacion(Long id) {
+        // Verificar si existe la postulación antes de eliminarla
+        if (postulacionRepository.existsById(id)) {
+            postulacionRepository.deleteById(id);
+        } else {
+            throw new RuntimeException("Postulación no encontrada con ID: " + id);
+        }
+    }
 }

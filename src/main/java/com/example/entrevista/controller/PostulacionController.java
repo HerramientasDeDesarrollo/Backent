@@ -6,6 +6,7 @@ import com.example.entrevista.service.PostulacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,36 @@ public class PostulacionController {
             return ResponseEntity.ok(postulacionService.listarPorConvocatoriaYEstado(convocatoriaId, estadoEnum));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // Endpoint para actualizar una postulación completa
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Postulacion postulacion) {
+        try {
+            Postulacion postulacionActualizada = postulacionService.actualizarPostulacion(id, postulacion);
+            return ResponseEntity.ok(postulacionActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar la postulación: " + e.getMessage()));
+        }
+    }
+
+    // Endpoint para eliminar una postulación
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminar(@PathVariable Long id) {
+        try {
+            postulacionService.eliminarPostulacion(id);
+            return ResponseEntity.ok(Map.of("mensaje", "Postulación eliminada correctamente"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al eliminar la postulación: " + e.getMessage()));
         }
     }
 }
