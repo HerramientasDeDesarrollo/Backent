@@ -4,6 +4,7 @@ import com.example.entrevista.model.Empresa;
 import com.example.entrevista.service.EmpresaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public class EmpresaController {
     @Autowired
     private EmpresaService empresaService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Empresa> crear(@RequestBody Empresa empresa) {
         return ResponseEntity.ok(empresaService.crearEmpresa(empresa));

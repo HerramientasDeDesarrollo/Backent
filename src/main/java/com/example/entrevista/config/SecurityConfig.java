@@ -11,8 +11,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -27,6 +29,14 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
+                // Solo ADMIN puede gestionar empresas
+                .requestMatchers("/api/empresas/**").hasRole("ADMIN")
+                // Solo EMPRESA puede gestionar convocatorias
+                .requestMatchers("/api/convocatorias/**").hasRole("EMPRESA")
+                // Solo USUARIO puede gestionar postulaciones, preguntas y evaluaciones propias
+                .requestMatchers("/api/postulaciones/**", "/api/preguntas/**", "/api/evaluaciones/**").hasRole("USUARIO")
+                // Solo USUARIO puede gestionar su propio perfil
+                .requestMatchers("/api/usuarios/**").hasRole("USUARIO")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

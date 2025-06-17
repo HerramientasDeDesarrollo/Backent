@@ -5,6 +5,7 @@ import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.service.PostulacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,11 +18,13 @@ public class PostulacionController {
     @Autowired
     private PostulacionService postulacionService;
 
+    @PreAuthorize("hasRole('USUARIO')")
     @PostMapping
     public ResponseEntity<Postulacion> crear(@RequestBody Postulacion postulacion) {
         return ResponseEntity.ok(postulacionService.crearPostulacion(postulacion));
     }
 
+    @PreAuthorize("hasRole('USUARIO')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<Postulacion>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(postulacionService.listarPorUsuario(usuarioId));
