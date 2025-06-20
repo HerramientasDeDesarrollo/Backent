@@ -45,9 +45,12 @@ public class AuthController {
             );
             UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
             System.out.println("userDetails: " + userDetails);
+            
+            // Get the full authority including "ROLE_" prefix
             String authority = userDetails.getAuthorities().iterator().next().getAuthority();
-            String role = authority.replace("ROLE_", "");
-            String token = jwtUtil.generateToken(userDetails.getUsername(), role);
+            
+            // Pass the full authority to generateToken - the method will handle the prefix
+            String token = jwtUtil.generateToken(userDetails.getUsername(), authority);
             System.out.println("token generado: " + token);
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (AuthenticationException e) {
@@ -66,7 +69,8 @@ public class AuthController {
         if (empresa == null || !passwordEncoder.matches(request.getPassword(), empresa.getPassword())) {
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
         }
-        String token = jwtUtil.generateToken(empresa.getEmail(), "EMPRESA");
+        // Include the full ROLE_ prefix
+        String token = jwtUtil.generateToken(empresa.getEmail(), "ROLE_EMPRESA");
         return ResponseEntity.ok(new AuthResponse(token));
     }
 }

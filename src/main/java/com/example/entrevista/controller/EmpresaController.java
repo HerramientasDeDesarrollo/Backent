@@ -16,7 +16,6 @@ public class EmpresaController {
     @Autowired
     private EmpresaService empresaService;
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Empresa> crear(@RequestBody Empresa empresa) {
         return ResponseEntity.ok(empresaService.crearEmpresa(empresa));

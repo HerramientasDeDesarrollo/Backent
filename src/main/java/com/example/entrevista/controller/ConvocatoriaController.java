@@ -16,7 +16,6 @@ public class ConvocatoriaController {
     @Autowired
     private ConvocatoriaService convocatoriaService;
 
-    @PreAuthorize("hasRole('EMPRESA')")
     @PostMapping
     public ResponseEntity<Convocatoria> crear(@RequestBody Convocatoria convocatoria) {
         return ResponseEntity.ok(convocatoriaService.crearConvocatoria(convocatoria));
@@ -35,7 +34,6 @@ public class ConvocatoriaController {
     }
 
     // Getting convocatorias by empresa ID
-    @PreAuthorize("hasRole('EMPRESA')")
     @GetMapping("/empresa/{empresaId}")
     public ResponseEntity<List<Convocatoria>> buscarPorEmpresa(@PathVariable Long empresaId) {
         List<Convocatoria> convocatorias = convocatoriaService.buscarPorEmpresa(empresaId);

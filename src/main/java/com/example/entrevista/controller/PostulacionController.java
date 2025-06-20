@@ -19,13 +19,11 @@ public class PostulacionController {
     @Autowired
     private PostulacionService postulacionService;
 
-    @PreAuthorize("hasRole('USUARIO')")
     @PostMapping
     public ResponseEntity<Postulacion> crear(@RequestBody Postulacion postulacion) {
         return ResponseEntity.ok(postulacionService.crearPostulacion(postulacion));
     }
 
-    @PreAuthorize("hasRole('USUARIO')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<Postulacion>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(postulacionService.listarPorUsuario(usuarioId));
