@@ -52,18 +52,39 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))            .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 
-                // Usar hasAuthority() en lugar de hasRole() para mayor control
-                .requestMatchers("/api/empresas/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
-                .requestMatchers("/api/convocatorias/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
-                .requestMatchers("/api/postulaciones/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
-                .requestMatchers("/api/preguntas/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
-                .requestMatchers("/api/evaluaciones/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
-                .requestMatchers("/api/usuarios/**").hasAnyAuthority("ROLE_EMPRESA", "ROLE_USUARIO", "ROLE_ADMIN")
+                // Empresas - Gestión de convocatorias y candidatos
+                .requestMatchers(HttpMethod.POST, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.PUT, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.DELETE, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/empresa/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/convocatoria/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/estado").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/postulacion/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/por-entrevista/**").hasAuthority("ROLE_EMPRESA")
+                
+                // Usuarios - Postulaciones y entrevistas
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/activas").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/postulaciones").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/preguntas/generar").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/mis-resultados/**").hasAuthority("ROLE_USUARIO")
+                
+                // Ambos roles pueden ver detalles específicos
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/empresas/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
+                
+                // Registro público
+                .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/empresas").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/email/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/empresas/email/**").permitAll()
                 
                 .anyRequest().authenticated()
             )

@@ -14,20 +14,22 @@ import java.util.List;
 public class EmpresaController {
 
     @Autowired
-    private EmpresaService empresaService;
-
+    private EmpresaService empresaService;    // Permitir creación de empresas (registro público)
     @PostMapping
     public ResponseEntity<Empresa> crear(@RequestBody Empresa empresa) {
         return ResponseEntity.ok(empresaService.crearEmpresa(empresa));
     }
 
+    // Solo empresas pueden ver su propio perfil, usuarios pueden ver info básica
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_EMPRESA') or hasAuthority('ROLE_USUARIO')")
     public ResponseEntity<Empresa> buscarPorId(@PathVariable Long id) {
         return empresaService.buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Para autenticación - permitir búsqueda por email
     @GetMapping("/email/{email}")
     public ResponseEntity<Empresa> buscarPorEmail(@PathVariable String email) {
         return empresaService.buscarPorEmail(email)
@@ -35,7 +37,9 @@ public class EmpresaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Solo admins pueden listar todas las empresas
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<List<Empresa>> listarTodas() {
         return ResponseEntity.ok(empresaService.listarTodas());
     }

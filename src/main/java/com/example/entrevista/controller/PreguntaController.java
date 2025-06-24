@@ -5,6 +5,7 @@ import com.example.entrevista.service.PreguntaService;
 import com.example.entrevista.model.Pregunta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,9 +15,9 @@ import java.util.List;
 public class PreguntaController {
 
     @Autowired
-    private PreguntaService preguntaService;
-
+    private PreguntaService preguntaService;    // Solo usuarios pueden generar preguntas para sus entrevistas
     @PostMapping("/generar")
+    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
     public ResponseEntity<?> generarPreguntas(@RequestBody PreguntaRequest request) {
         try {
             // Validación de campos obligatorios
@@ -32,8 +33,10 @@ public class PreguntaController {
         }
     }
 
-    @GetMapping("/mis-preguntas/postulacion/{postulacionId}")
-    public ResponseEntity<?> verMisPreguntasPorPostulacion(@PathVariable Long postulacionId) {
+    // Solo usuarios pueden ver sus preguntas por postulación
+    @GetMapping("/postulacion/{postulacionId}")
+    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    public ResponseEntity<?> verPreguntasPorPostulacion(@PathVariable Long postulacionId) {
         try {
             List<Pregunta> preguntas = preguntaService.obtenerPreguntasPorPostulacion(postulacionId);
             return ResponseEntity.ok(preguntas);
@@ -43,8 +46,10 @@ public class PreguntaController {
         }
     }
 
-    @GetMapping("/mis-preguntas/convocatoria/{convocatoriaId}")
-    public ResponseEntity<?> verMisPreguntasPorConvocatoria(@PathVariable Long convocatoriaId) {
+    // Empresas pueden ver preguntas de sus convocatorias para análisis
+    @GetMapping("/convocatoria/{convocatoriaId}")
+    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    public ResponseEntity<?> verPreguntasPorConvocatoria(@PathVariable Long convocatoriaId) {
         try {
             List<Pregunta> preguntas = preguntaService.obtenerPreguntasPorConvocatoria(convocatoriaId);
             return ResponseEntity.ok(preguntas);

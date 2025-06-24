@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -37,9 +38,9 @@ public class EvaluacionController {
     private PostulacionRepository postulacionRepository;
     
     @Autowired
-    private ObjectMapper objectMapper;
-
+    private ObjectMapper objectMapper;    // Solo usuarios pueden evaluar sus respuestas
     @PostMapping("/evaluar")
+    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
     public ResponseEntity<?> evaluarRespuesta(@RequestBody Map<String, Object> requestMap) {
         logger.info("Recibida solicitud de evaluación: {}", requestMap);
         
@@ -169,9 +170,9 @@ public class EvaluacionController {
         }
         
         return errors;
-    }
-
+    }    // Solo usuarios pueden ver sus propios resultados
     @GetMapping("/mis-resultados/{postulacionId}")
+    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
     public ResponseEntity<?> verMisResultados(@PathVariable Long postulacionId) {
         try {
             // Obtener la postulación
@@ -278,9 +279,9 @@ public class EvaluacionController {
                     "error", "Error al procesar la solicitud: " + e.getMessage()
                 ));
         }
-    }
-
+    }    // Solo usuarios pueden ver detalles de sus resultados
     @GetMapping("/mis-resultados/detalle/{postulacionId}")
+    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
     public ResponseEntity<?> verMisResultadosDetalle(@PathVariable Long postulacionId) {
         try {
             // Obtener la postulación
@@ -397,9 +398,9 @@ public class EvaluacionController {
                     "error", "Error al procesar la solicitud: " + e.getMessage()
                 ));
         }
-    }
-
+    }    // Empresas pueden ver resultados de entrevistas de sus convocatorias
     @GetMapping("/por-entrevista/{entrevistaId}")
+    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
     public ResponseEntity<?> verResultadosPorEntrevista(@PathVariable Long entrevistaId) {
         try {
             List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorEntrevista(entrevistaId);
@@ -420,10 +421,23 @@ public class EvaluacionController {
                 "mensaje", "Resultados encontrados",
                 "totalPostulaciones", evaluacionesPorPostulacion.size(),
                 "totalEvaluaciones", evaluaciones.size(),
-                "resultadosPorPostulacion", evaluacionesPorPostulacion
-            ));
+                "resultadosPorPostulacion", evaluacionesPorPostulacion            ));
         } catch (Exception e) {
             logger.error("Error al obtener resultados para entrevistador {}: {}", entrevistaId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error al procesar la solicitud: " + e.getMessage()));
+        }
+    }
+
+    // Empresas pueden ver evaluaciones de una postulación específica
+    @GetMapping("/postulacion/{postulacionId}")
+    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    public ResponseEntity<?> verEvaluacionesPorPostulacion(@PathVariable Long postulacionId) {
+        try {
+            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);
+            return ResponseEntity.ok(evaluaciones);
+        } catch (Exception e) {
+            logger.error("Error al obtener evaluaciones para postulación {}: {}", postulacionId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Error al procesar la solicitud: " + e.getMessage()));
         }
