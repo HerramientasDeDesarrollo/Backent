@@ -38,7 +38,9 @@ public class EvaluacionController {
     private PostulacionRepository postulacionRepository;
     
     @Autowired
-    private ObjectMapper objectMapper;    // Solo usuarios pueden evaluar sus respuestas
+    private ObjectMapper objectMapper;    
+    
+    // Solo usuarios pueden evaluar sus respuestas
     @PostMapping("/evaluar")
     @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> evaluarRespuesta(@RequestBody Map<String, Object> requestMap) {
@@ -279,7 +281,8 @@ public class EvaluacionController {
                     "error", "Error al procesar la solicitud: " + e.getMessage()
                 ));
         }
-    }    // Solo usuarios pueden ver detalles de sus resultados
+    }    
+    // Solo usuarios pueden ver detalles de sus resultados
     @GetMapping("/mis-resultados/detalle/{postulacionId}")
     @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verMisResultadosDetalle(@PathVariable Long postulacionId) {
@@ -398,7 +401,8 @@ public class EvaluacionController {
                     "error", "Error al procesar la solicitud: " + e.getMessage()
                 ));
         }
-    }    // Empresas pueden ver resultados de entrevistas de sus convocatorias
+    }    
+    // Empresas pueden ver resultados de entrevistas de sus convocatorias
     @GetMapping("/por-entrevista/{entrevistaId}")
     @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> verResultadosPorEntrevista(@PathVariable Long entrevistaId) {
