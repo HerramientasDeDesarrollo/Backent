@@ -4,6 +4,8 @@ import com.example.entrevista.DTO.AuthRequest;
 import com.example.entrevista.DTO.AuthResponse;
 import com.example.entrevista.util.JwtUtil;
 import com.example.entrevista.service.CustomUserDetailsService;
+import com.example.entrevista.model.Usuario;
+import com.example.entrevista.model.Empresa;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,7 +21,9 @@ import java.util.Map;
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;    @Autowired
+    private AuthenticationManager authenticationManager;
+    
+    @Autowired
     private CustomUserDetailsService userDetailsService;
 
     @Autowired
@@ -40,12 +44,44 @@ public class AuthController {
             // Get the full authority including "ROLE_" prefix
             String authority = userDetails.getAuthorities().iterator().next().getAuthority();
             
-            // Pass the full authority to generateToken - the method will handle the prefix
-            String token = jwtUtil.generateToken(userDetails.getUsername(), authority);
+            // Obtener información adicional del usuario o empresa
+            Usuario usuario = userDetailsService.findUsuarioByEmail(request.getEmail());
+            Empresa empresa = null;
+            
+            String token;
+            if (usuario != null) {
+                // Es un usuario
+                token = jwtUtil.generateToken(
+                    userDetails.getUsername(), 
+                    authority,
+                    usuario.getId(),
+                    usuario.getNombre(),
+                    usuario.getApellidoPaterno(),
+                    usuario.getApellidoMaterno()
+                );
+            } else {
+                // Es una empresa
+                empresa = userDetailsService.findEmpresaByEmail(request.getEmail());
+                if (empresa != null) {
+                    token = jwtUtil.generateToken(
+                        userDetails.getUsername(), 
+                        authority,
+                        empresa.getId(),
+                        empresa.getNombre(),
+                        null, // Las empresas no tienen apellidos
+                        null
+                    );
+                } else {
+                    // Fallback al método original
+                    token = jwtUtil.generateToken(userDetails.getUsername(), authority);
+                }
+            }
+            
             System.out.println("token generado: " + token);
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (AuthenticationException e) {
             System.out.println("Error de autenticación: " + e.getMessage());
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
-        }    }
+        }
+    }
 }

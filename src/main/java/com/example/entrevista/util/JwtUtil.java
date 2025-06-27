@@ -23,10 +23,15 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, String role, Long userId, String nombre, String apellidoPaterno, String apellidoMaterno) {
         Map<String, Object> claims = new HashMap<>();
         // No agregar prefijo aquí, se maneja en la configuración de seguridad
         claims.put("role", role);
+        claims.put("userId", userId);
+        claims.put("nombre", nombre);
+        claims.put("apellidoPaterno", apellidoPaterno);
+        claims.put("apellidoMaterno", apellidoMaterno);
+        
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
@@ -34,6 +39,11 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // Mantener el método original para compatibilidad
+    public String generateToken(String username, String role) {
+        return generateToken(username, role, null, null, null, null);
     }
 
     public Claims extractAllClaims(String token) {
@@ -59,6 +69,24 @@ public class JwtUtil {
     public boolean validateToken(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
+    }
+
+    // Métodos para extraer la nueva información
+    public Long extractUserId(String token) {
+        Object userId = extractAllClaims(token).get("userId");
+        return userId != null ? ((Number) userId).longValue() : null;
+    }
+
+    public String extractNombre(String token) {
+        return (String) extractAllClaims(token).get("nombre");
+    }
+
+    public String extractApellidoPaterno(String token) {
+        return (String) extractAllClaims(token).get("apellidoPaterno");
+    }
+
+    public String extractApellidoMaterno(String token) {
+        return (String) extractAllClaims(token).get("apellidoMaterno");
     }
 }
 

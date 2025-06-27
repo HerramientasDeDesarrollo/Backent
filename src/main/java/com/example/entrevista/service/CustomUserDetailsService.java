@@ -50,4 +50,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return usuarioRepository.save(user);
     }
+
+    public Usuario findUsuarioByEmail(String email) {
+        return usuarioRepository.findByEmail(email).orElse(null);
+    }
+
+    public Empresa findEmpresaByEmail(String email) {
+        return empresaRepository.findByEmail(email).orElse(null);
+    }
 }
