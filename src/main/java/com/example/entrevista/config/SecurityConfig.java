@@ -57,28 +57,28 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 
                 // Empresas - Gestión de convocatorias y candidatos
-                .requestMatchers(HttpMethod.POST, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.PUT, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.DELETE, "/api/convocatorias/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/convocatorias/empresa/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/postulaciones/convocatoria/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/estado").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/postulacion/**").hasAuthority("ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/por-entrevista/**").hasAuthority("ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.POST, "/api/convocatorias/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.PUT, "/api/convocatorias/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.DELETE, "/api/convocatorias/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/empresa/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/convocatoria/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/estado").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/postulacion/**").hasRole("EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/por-entrevista/**").hasRole("EMPRESA")
                 
                 // Usuarios - Postulaciones y entrevistas
-                .requestMatchers(HttpMethod.GET, "/api/convocatorias/activas").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.POST, "/api/postulaciones").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.POST, "/api/preguntas/generar").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasAuthority("ROLE_USUARIO")
-                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/mis-resultados/**").hasAuthority("ROLE_USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/activas").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/postulaciones").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/preguntas/generar").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.GET, "/api/evaluaciones/mis-resultados/**").hasRole("USUARIO")
                 
                 // Ambos roles pueden ver detalles específicos
-                .requestMatchers(HttpMethod.GET, "/api/convocatorias/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/postulaciones/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
-                .requestMatchers(HttpMethod.GET, "/api/empresas/*").hasAnyAuthority("ROLE_USUARIO", "ROLE_EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/convocatorias/*").hasAnyRole("USUARIO", "EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/*").hasAnyRole("USUARIO", "EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/empresas/*").hasAnyRole("USUARIO", "EMPRESA")
                 
                 // Registro público
                 .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()

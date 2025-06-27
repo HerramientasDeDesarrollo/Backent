@@ -19,28 +19,28 @@ public class PostulacionController {
     @Autowired
     private PostulacionService postulacionService;    // Solo usuarios pueden crear postulaciones
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<Postulacion> crear(@RequestBody Postulacion postulacion) {
         return ResponseEntity.ok(postulacionService.crearPostulacion(postulacion));
     }
 
     // Solo usuarios pueden ver sus propias postulaciones
     @GetMapping("/usuario/{usuarioId}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<List<Postulacion>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(postulacionService.listarPorUsuario(usuarioId));
     }
 
     // Solo empresas pueden ver postulaciones de sus convocatorias
     @GetMapping("/convocatoria/{convocatoriaId}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<List<Postulacion>> listarPorConvocatoria(@PathVariable Long convocatoriaId) {
         return ResponseEntity.ok(postulacionService.listarPorConvocatoria(convocatoriaId));
     }
 
     // Usuarios pueden ver sus postulaciones, empresas pueden ver postulaciones de sus convocatorias
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO') or hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('USUARIO') or hasRole('EMPRESA')")
     public ResponseEntity<Postulacion> buscarPorId(@PathVariable Long id) {
         return postulacionService.buscarPorId(id)
                 .map(ResponseEntity::ok)
@@ -48,7 +48,7 @@ public class PostulacionController {
     }
       // Solo empresas pueden actualizar estado (para mover candidatos entre fases)
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<Postulacion> actualizarEstado(
             @PathVariable Long id, 
             @RequestBody Map<String, String> cambioEstado) {
@@ -68,7 +68,7 @@ public class PostulacionController {
     
     // Solo empresas pueden filtrar por estado
     @GetMapping("/estado/{estado}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<List<Postulacion>> listarPorEstado(@PathVariable String estado) {
         try {
             EstadoPostulacion estadoEnum = EstadoPostulacion.valueOf(estado.toUpperCase());

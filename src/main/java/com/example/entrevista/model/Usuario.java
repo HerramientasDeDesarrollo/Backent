@@ -39,7 +39,8 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.rol.name()));
+        // No agregar prefijo ROLE_ aquí, se manejará en la configuración
+        return List.of(new SimpleGrantedAuthority(this.rol.name()));
     }
 
     @Override

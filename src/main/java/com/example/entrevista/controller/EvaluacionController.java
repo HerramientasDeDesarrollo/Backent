@@ -40,7 +40,7 @@ public class EvaluacionController {
     @Autowired
     private ObjectMapper objectMapper;    // Solo usuarios pueden evaluar sus respuestas
     @PostMapping("/evaluar")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> evaluarRespuesta(@RequestBody Map<String, Object> requestMap) {
         logger.info("Recibida solicitud de evaluación: {}", requestMap);
         
@@ -172,7 +172,7 @@ public class EvaluacionController {
         return errors;
     }    // Solo usuarios pueden ver sus propios resultados
     @GetMapping("/mis-resultados/{postulacionId}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verMisResultados(@PathVariable Long postulacionId) {
         try {
             // Obtener la postulación
@@ -281,7 +281,7 @@ public class EvaluacionController {
         }
     }    // Solo usuarios pueden ver detalles de sus resultados
     @GetMapping("/mis-resultados/detalle/{postulacionId}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verMisResultadosDetalle(@PathVariable Long postulacionId) {
         try {
             // Obtener la postulación
@@ -400,7 +400,7 @@ public class EvaluacionController {
         }
     }    // Empresas pueden ver resultados de entrevistas de sus convocatorias
     @GetMapping("/por-entrevista/{entrevistaId}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> verResultadosPorEntrevista(@PathVariable Long entrevistaId) {
         try {
             List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorEntrevista(entrevistaId);
@@ -431,7 +431,7 @@ public class EvaluacionController {
 
     // Empresas pueden ver evaluaciones de una postulación específica
     @GetMapping("/postulacion/{postulacionId}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> verEvaluacionesPorPostulacion(@PathVariable Long postulacionId) {
         try {
             List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);

@@ -22,7 +22,7 @@ public class UsuarioController {
 
     // Solo usuarios pueden ver su propio perfil
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO') and #id == authentication.principal.id")
+    @PreAuthorize("hasRole('USUARIO') and #id == authentication.principal.id")
     public ResponseEntity<Usuario> buscarPorId(@PathVariable Long id) {
         return usuarioService.buscarPorId(id)
                 .map(ResponseEntity::ok)
@@ -39,7 +39,7 @@ public class UsuarioController {
 
     // Solo admins pueden listar todos los usuarios (si implementas rol ADMIN)
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Usuario>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }

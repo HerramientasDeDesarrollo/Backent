@@ -17,7 +17,7 @@ public class PreguntaController {
     @Autowired
     private PreguntaService preguntaService;    // Solo usuarios pueden generar preguntas para sus entrevistas
     @PostMapping("/generar")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> generarPreguntas(@RequestBody PreguntaRequest request) {
         try {
             // Validación de campos obligatorios
@@ -35,7 +35,7 @@ public class PreguntaController {
 
     // Solo usuarios pueden ver sus preguntas por postulación
     @GetMapping("/postulacion/{postulacionId}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verPreguntasPorPostulacion(@PathVariable Long postulacionId) {
         try {
             List<Pregunta> preguntas = preguntaService.obtenerPreguntasPorPostulacion(postulacionId);
@@ -48,7 +48,7 @@ public class PreguntaController {
 
     // Empresas pueden ver preguntas de sus convocatorias para análisis
     @GetMapping("/convocatoria/{convocatoriaId}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> verPreguntasPorConvocatoria(@PathVariable Long convocatoriaId) {
         try {
             List<Pregunta> preguntas = preguntaService.obtenerPreguntasPorConvocatoria(convocatoriaId);

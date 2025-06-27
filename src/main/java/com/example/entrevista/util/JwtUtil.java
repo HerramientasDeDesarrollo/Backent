@@ -25,10 +25,7 @@ public class JwtUtil {
 
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        // Add "ROLE_" prefix if it doesn't exist already
-        if (role != null && !role.startsWith("ROLE_")) {
-            role = "ROLE_" + role;
-        }
+        // No agregar prefijo aquí, se maneja en la configuración de seguridad
         claims.put("role", role);
         return Jwts.builder()
                 .setClaims(claims)

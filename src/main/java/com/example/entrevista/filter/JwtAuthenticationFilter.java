@@ -43,11 +43,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 logger.info("JWT Token role: " + role);
                 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // Important: Make sure we're using the exact role format from the token
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                    // Important: Add ROLE_ prefix for Spring Security compatibility
+                    String authorityName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
                     logger.info("Created authority: " + authority.getAuthority());
                     
-                    // Create authentication with the role directly from token
+                    // Create authentication with the role properly formatted
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             username, null, Collections.singletonList(authority));
                     

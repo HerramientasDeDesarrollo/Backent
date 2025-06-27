@@ -22,7 +22,7 @@ public class EmpresaController {
 
     // Solo empresas pueden ver su propio perfil, usuarios pueden ver info básica
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA') or hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('EMPRESA') or hasRole('USUARIO')")
     public ResponseEntity<Empresa> buscarPorId(@PathVariable Long id) {
         return empresaService.buscarPorId(id)
                 .map(ResponseEntity::ok)
@@ -39,7 +39,7 @@ public class EmpresaController {
 
     // Solo admins pueden listar todas las empresas
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Empresa>> listarTodas() {
         return ResponseEntity.ok(empresaService.listarTodas());
     }

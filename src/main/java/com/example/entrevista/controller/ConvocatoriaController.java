@@ -16,14 +16,14 @@ public class ConvocatoriaController {
     @Autowired
     private ConvocatoriaService convocatoriaService;    // Solo empresas pueden crear convocatorias
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<Convocatoria> crear(@RequestBody Convocatoria convocatoria) {
         return ResponseEntity.ok(convocatoriaService.crearConvocatoria(convocatoria));
     }
 
     // Usuarios y empresas pueden ver detalles específicos
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO') or hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('USUARIO') or hasRole('EMPRESA')")
     public ResponseEntity<Convocatoria> buscarPorId(@PathVariable Long id) {
         return convocatoriaService.buscarPorId(id)
                 .map(ResponseEntity::ok)
@@ -32,7 +32,7 @@ public class ConvocatoriaController {
 
     // Solo empresas pueden ver sus propias convocatorias
     @GetMapping("/empresa/{empresaId}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<List<Convocatoria>> buscarPorEmpresa(@PathVariable Long empresaId) {
         List<Convocatoria> convocatorias = convocatoriaService.buscarPorEmpresa(empresaId);
         return ResponseEntity.ok(convocatorias);
@@ -40,13 +40,13 @@ public class ConvocatoriaController {
 
     // Solo usuarios pueden ver convocatorias activas (para postular)
     @GetMapping("/activas")
-    @PreAuthorize("hasAuthority('ROLE_USUARIO')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<List<Convocatoria>> listarActivas() {
         List<Convocatoria> convocatorias = convocatoriaService.listarActivas();
         return ResponseEntity.ok(convocatorias);
     }    // Solo empresas pueden eliminar sus convocatorias
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         convocatoriaService.eliminarConvocatoria(id);
         return ResponseEntity.ok().build();
