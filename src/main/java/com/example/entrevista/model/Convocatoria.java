@@ -15,10 +15,12 @@ public class Convocatoria {
     private Long id;
 
     private String titulo;
-    private String descripcion;
-    
+
     @Lob
-    private String puesto; //Promt para la IA
+    private String descripcion; // Ahora permite textos largos (se mapea a TEXT en MySQL)
+
+    @Lob
+    private String puesto; // Prompt para la IA
 
     private boolean activo; // Indica si la convocatoria está activa o no
     private String fechaPublicacion; // Fecha de publicación en formato ISO 8601 (YYYY-MM-DD)
