@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.example.entrevista.util.JwtUtil;
+import com.example.entrevista.security.UserPrincipal;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,18 +39,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
+                Long userId = jwtUtil.extractUserId(token);
+                String nombre = jwtUtil.extractNombre(token);
+                String apellidoPaterno = jwtUtil.extractApellidoPaterno(token);
+                String apellidoMaterno = jwtUtil.extractApellidoMaterno(token);
                 
                 logger.info("JWT Token username: " + username);
                 logger.info("JWT Token role: " + role);
+                logger.info("JWT Token userId: " + userId);
+                logger.info("JWT Token nombre: " + nombre);
                 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Important: Make sure we're using the exact role format from the token
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
                     logger.info("Created authority: " + authority.getAuthority());
                     
+                    // Create a custom authentication principal that includes user info
+                    UserPrincipal userPrincipal = new UserPrincipal(username, userId, nombre, apellidoPaterno, apellidoMaterno);
+                    
                     // Create authentication with the role directly from token
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            username, null, Collections.singletonList(authority));
+                            userPrincipal, null, Collections.singletonList(authority));
                     
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);
