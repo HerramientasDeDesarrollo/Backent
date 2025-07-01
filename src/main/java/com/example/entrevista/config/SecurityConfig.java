@@ -70,6 +70,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/convocatorias/activas").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/postulaciones").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/iniciar-entrevista").hasRole("USUARIO") // NUEVO
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/completar-entrevista").hasRole("USUARIO") // NUEVO
                 .requestMatchers(HttpMethod.POST, "/api/preguntas/generar").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasRole("USUARIO")

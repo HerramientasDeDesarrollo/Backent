@@ -39,6 +39,12 @@ public class PostulacionService {
     public Postulacion actualizarEstado(Long postulacionId, EstadoPostulacion nuevoEstado) {
         return postulacionRepository.findById(postulacionId)
                 .map(postulacion -> {
+                    // Validar transiciones válidas (opcional)
+                    if (!esTransicionValida(postulacion.getEstado(), nuevoEstado)) {
+                        throw new RuntimeException("Transición de estado no válida: " + 
+                                postulacion.getEstado() + " -> " + nuevoEstado);
+                    }
+                    
                     postulacion.setEstado(nuevoEstado);
                     return postulacionRepository.save(postulacion);
                 })
@@ -78,5 +84,14 @@ public class PostulacionService {
         } else {
             throw new RuntimeException("Postulación no encontrada con ID: " + id);
         }
+    }
+    
+    // Método privado para validar transiciones (opcional)
+    private boolean esTransicionValida(EstadoPostulacion estadoActual, EstadoPostulacion nuevoEstado) {
+        return switch (estadoActual) {
+            case PENDIENTE -> nuevoEstado == EstadoPostulacion.EN_EVALUACION;
+            case EN_EVALUACION -> nuevoEstado == EstadoPostulacion.COMPLETADA;
+            case COMPLETADA -> false; // No se puede cambiar desde completada
+        };
     }
 }

@@ -48,7 +48,7 @@ public class PostulacionController {
     }
       // Solo empresas pueden actualizar estado (para mover candidatos entre fases)
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasRole('EMPRESA')")
+    @PreAuthorize("hasRole('EMPRESA')") // Corregido: solo empresas
     public ResponseEntity<Postulacion> actualizarEstado(
             @PathVariable Long id, 
             @RequestBody Map<String, String> cambioEstado) {
@@ -79,6 +79,7 @@ public class PostulacionController {
     }
     
     @GetMapping("/usuario/{usuarioId}/estado/{estado}")
+    @PreAuthorize("hasRole('USUARIO')") // Agregado
     public ResponseEntity<List<Postulacion>> listarPorUsuarioYEstado(
             @PathVariable Long usuarioId,
             @PathVariable String estado) {
@@ -92,6 +93,7 @@ public class PostulacionController {
     }
     
     @GetMapping("/convocatoria/{convocatoriaId}/estado/{estado}")
+    @PreAuthorize("hasRole('EMPRESA')") // Agregado
     public ResponseEntity<List<Postulacion>> listarPorConvocatoriaYEstado(
             @PathVariable Long convocatoriaId,
             @PathVariable String estado) {
@@ -106,6 +108,7 @@ public class PostulacionController {
     
     // Endpoint para actualizar una postulación completa
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('EMPRESA') or hasRole('USUARIO')") // Agregado
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Postulacion postulacion) {
         try {
             Postulacion postulacionActualizada = postulacionService.actualizarPostulacion(id, postulacion);
@@ -121,6 +124,7 @@ public class PostulacionController {
 
     // Endpoint para eliminar una postulación
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('EMPRESA')") // Agregado - solo empresas pueden eliminar
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         try {
             postulacionService.eliminarPostulacion(id);
@@ -131,6 +135,58 @@ public class PostulacionController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al eliminar la postulación: " + e.getMessage()));
+        }
+    }
+    
+    // Usuarios pueden iniciar su proceso de entrevista
+    @PatchMapping("/{id}/iniciar-entrevista")
+    @PreAuthorize("hasRole('USUARIO')")
+    public ResponseEntity<?> iniciarEntrevista(@PathVariable Long id) {
+        try {
+            // Solo permitir cambio de PENDIENTE a EN_EVALUACION
+            Postulacion postulacion = postulacionService.buscarPorId(id)
+                    .orElseThrow(() -> new RuntimeException("Postulación no encontrada con ID: " + id));
+            
+            // Validar que esté en estado PENDIENTE
+            if (postulacion.getEstado() != EstadoPostulacion.PENDIENTE) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Solo se puede iniciar entrevista desde estado PENDIENTE. Estado actual: " + postulacion.getEstado()));
+            }
+            
+            Postulacion postulacionActualizada = postulacionService.actualizarEstado(id, EstadoPostulacion.EN_EVALUACION);
+            return ResponseEntity.ok(postulacionActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al iniciar entrevista: " + e.getMessage()));
+        }
+    }
+
+    // Usuarios pueden completar su entrevista
+    @PatchMapping("/{id}/completar-entrevista")
+    @PreAuthorize("hasRole('USUARIO')")
+    public ResponseEntity<?> completarEntrevista(@PathVariable Long id) {
+        try {
+            // Solo permitir cambio de EN_EVALUACION a COMPLETADA
+            Postulacion postulacion = postulacionService.buscarPorId(id)
+                    .orElseThrow(() -> new RuntimeException("Postulación no encontrada con ID: " + id));
+            
+            // Validar que esté en estado EN_EVALUACION
+            if (postulacion.getEstado() != EstadoPostulacion.EN_EVALUACION) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Solo se puede completar entrevista desde estado EN_EVALUACION. Estado actual: " + postulacion.getEstado()));
+            }
+            
+            Postulacion postulacionActualizada = postulacionService.actualizarEstado(id, EstadoPostulacion.COMPLETADA);
+            return ResponseEntity.ok(postulacionActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al completar entrevista: " + e.getMessage()));
         }
     }
 }
