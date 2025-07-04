@@ -189,4 +189,28 @@ public class PostulacionController {
                     .body(Map.of("error", "Error al completar entrevista: " + e.getMessage()));
         }
     }
+
+    // Endpoint para marcar si las preguntas han sido generadas
+    @PatchMapping("/{id}/marcar-preguntas-generadas")
+    @PreAuthorize("hasRole('USUARIO')")
+    public ResponseEntity<?> marcarPreguntasGeneradas(@PathVariable Long id, @RequestBody Map<String, Boolean> datos) {
+        try {
+            // Obtener el valor del parámetro generadas
+            Boolean generadas = datos.get("generadas");
+            if (generadas == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El campo 'generadas' es obligatorio"));
+            }
+            
+            // Actualizar el campo preguntasGeneradas
+            Postulacion postulacionActualizada = postulacionService.marcarPreguntasGeneradas(id, generadas);
+            return ResponseEntity.ok(postulacionActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar el estado de preguntas generadas: " + e.getMessage()));
+        }
+    }
 }

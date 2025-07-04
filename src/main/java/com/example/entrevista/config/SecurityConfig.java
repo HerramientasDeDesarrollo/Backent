@@ -76,6 +76,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.GET, "/api/evaluaciones/mis-resultados/**").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/marcar-preguntas-generadas").hasRole("USUARIO") // NUEVO
                 
                 // Ambos roles pueden ver detalles específicos
                 .requestMatchers(HttpMethod.GET, "/api/convocatorias/*").hasAnyRole("USUARIO", "EMPRESA")
