@@ -6,11 +6,14 @@ import com.example.entrevista.util.JwtUtil;
 import com.example.entrevista.service.CustomUserDetailsService;
 import com.example.entrevista.model.Usuario;
 import com.example.entrevista.model.Empresa;
+import com.example.entrevista.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
@@ -49,6 +52,8 @@ public class AuthController {
             Empresa empresa = null;
             
             String token;
+            AuthResponse response;
+            
             if (usuario != null) {
                 // Es un usuario
                 token = jwtUtil.generateToken(
@@ -58,6 +63,15 @@ public class AuthController {
                     usuario.getNombre(),
                     usuario.getApellidoPaterno(),
                     usuario.getApellidoMaterno()
+                );
+                response = new AuthResponse(
+                    token,
+                    "USUARIO",
+                    usuario.getId(),
+                    usuario.getNombre(),
+                    usuario.getApellidoPaterno(),
+                    usuario.getApellidoMaterno(),
+                    usuario.getEmail()
                 );
             } else {
                 // Es una empresa
@@ -71,17 +85,53 @@ public class AuthController {
                         null, // Las empresas no tienen apellidos
                         null
                     );
+                    response = new AuthResponse(
+                        token,
+                        "EMPRESA",
+                        empresa.getId(),
+                        empresa.getNombre(),
+                        null, // Las empresas no tienen apellidos
+                        null,
+                        empresa.getEmail()
+                    );
                 } else {
                     // Fallback al método original
                     token = jwtUtil.generateToken(userDetails.getUsername(), authority);
+                    response = new AuthResponse(token);
                 }
             }
             
             System.out.println("token generado: " + token);
-            return ResponseEntity.ok(new AuthResponse(token));
+            return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
             System.out.println("Error de autenticación: " + e.getMessage());
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
+        }
+    }
+    
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal) {
+                UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+                
+                Map<String, Object> userInfo = Map.of(
+                    "id", userPrincipal.getId(),
+                    "email", userPrincipal.getEmail(),
+                    "nombre", userPrincipal.getNombre() != null ? userPrincipal.getNombre() : "",
+                    "apellidoPaterno", userPrincipal.getApellidoPaterno() != null ? userPrincipal.getApellidoPaterno() : "",
+                    "apellidoMaterno", userPrincipal.getApellidoMaterno() != null ? userPrincipal.getApellidoMaterno() : "",
+                    "nombreCompleto", userPrincipal.getNombreCompleto(),
+                    "userType", userPrincipal.getUserType(),
+                    "roles", authentication.getAuthorities()
+                );
+                
+                return ResponseEntity.ok(userInfo);
+            }
+            return ResponseEntity.status(401).body(Map.of("error", "Usuario no autenticado"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error interno del servidor"));
         }
     }
 }

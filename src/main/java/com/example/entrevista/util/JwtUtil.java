@@ -3,7 +3,6 @@ package com.example.entrevista.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -17,8 +16,6 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
@@ -31,6 +28,10 @@ public class JwtUtil {
         claims.put("nombre", nombre);
         claims.put("apellidoPaterno", apellidoPaterno);
         claims.put("apellidoMaterno", apellidoMaterno);
+        
+        // Determinar userType basado en si tiene apellidos o no
+        String userType = (apellidoPaterno != null || apellidoMaterno != null) ? "USUARIO" : "EMPRESA";
+        claims.put("userType", userType);
         
         return Jwts.builder()
                 .setClaims(claims)
@@ -87,6 +88,10 @@ public class JwtUtil {
 
     public String extractApellidoMaterno(String token) {
         return (String) extractAllClaims(token).get("apellidoMaterno");
+    }
+
+    public String extractUserType(String token) {
+        return (String) extractAllClaims(token).get("userType");
     }
 }
 

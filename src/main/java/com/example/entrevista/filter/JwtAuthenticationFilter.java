@@ -43,11 +43,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String nombre = jwtUtil.extractNombre(token);
                 String apellidoPaterno = jwtUtil.extractApellidoPaterno(token);
                 String apellidoMaterno = jwtUtil.extractApellidoMaterno(token);
+                String userType = jwtUtil.extractUserType(token);
                 
                 logger.info("JWT Token username: " + username);
                 logger.info("JWT Token role: " + role);
                 logger.info("JWT Token userId: " + userId);
                 logger.info("JWT Token nombre: " + nombre);
+                logger.info("JWT Token userType: " + userType);
                 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Important: Add ROLE_ prefix for Spring Security compatibility
@@ -56,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     logger.info("Created authority: " + authority.getAuthority());
                     
                     // Create a custom authentication principal that includes user info
-                    UserPrincipal userPrincipal = new UserPrincipal(username, userId, nombre, apellidoPaterno, apellidoMaterno);
+                    UserPrincipal userPrincipal = new UserPrincipal(username, userId, nombre, apellidoPaterno, apellidoMaterno, userType);
                     
                     // Create authentication with the role properly formatted
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
