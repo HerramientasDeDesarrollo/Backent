@@ -3,6 +3,7 @@ package com.example.entrevista.service;
 import com.example.entrevista.model.EstadoPostulacion;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.model.Usuario;
+import com.example.entrevista.model.EntrevistaSession;
 import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.repository.UsuarioRepository;
 
@@ -20,6 +21,9 @@ public class PostulacionService {
 
     @Autowired
     private UsuarioRepository usuarioRepository; // Inyecta el repositorio de Usuario
+    
+    @Autowired
+    private EntrevistaSessionService entrevistaSessionService; // Nuevo servicio
     
     public Postulacion crearPostulacion(Postulacion postulacion) {
         // Aseguramos que toda nueva postulación comienza en estado PENDIENTE
@@ -120,5 +124,36 @@ public class PostulacionService {
         
         postulacion.setPreguntasGeneradas(generadas);
         return postulacionRepository.save(postulacion);
+    }
+    
+    // Nuevo método para crear o recuperar EntrevistaSession
+    public Long crearORecuperarEntrevistaSession(Long postulacionId) {
+        // Buscar si ya existe una sesión para esta postulación
+        Optional<EntrevistaSession> sesionExistente = entrevistaSessionService.buscarPorPostulacion(postulacionId);
+        
+        if (sesionExistente.isPresent()) {
+            // Actualizar el campo en postulacion si no está ya establecido
+            Postulacion postulacion = postulacionRepository.findById(postulacionId)
+                .orElseThrow(() -> new RuntimeException("Postulación no encontrada con ID: " + postulacionId));
+            
+            if (postulacion.getEntrevistaSessionId() == null) {
+                postulacion.setEntrevistaSessionId(sesionExistente.get().getId());
+                postulacionRepository.save(postulacion);
+            }
+            
+            return sesionExistente.get().getId();
+        }
+        
+        // Crear nueva sesión
+        EntrevistaSession nuevaSesion = entrevistaSessionService.crearORecuperarSesion(postulacionId);
+        
+        // Actualizar la postulación con el ID de la sesión
+        Postulacion postulacion = postulacionRepository.findById(postulacionId)
+            .orElseThrow(() -> new RuntimeException("Postulación no encontrada con ID: " + postulacionId));
+        
+        postulacion.setEntrevistaSessionId(nuevaSesion.getId());
+        postulacionRepository.save(postulacion);
+        
+        return nuevaSesion.getId();
     }
 }

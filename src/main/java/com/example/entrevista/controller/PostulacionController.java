@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -153,8 +154,19 @@ public class PostulacionController {
                         .body(Map.of("error", "Solo se puede iniciar entrevista desde estado PENDIENTE. Estado actual: " + postulacion.getEstado()));
             }
             
+            // Crear o recuperar EntrevistaSession (idempotente)
+            Long entrevistaSessionId = postulacionService.crearORecuperarEntrevistaSession(id);
+            
+            // Actualizar estado de la postulación
             Postulacion postulacionActualizada = postulacionService.actualizarEstado(id, EstadoPostulacion.EN_EVALUACION);
-            return ResponseEntity.ok(postulacionActualizada);
+            
+            // Preparar respuesta con entrevista_session_id
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("postulacion", postulacionActualizada);
+            respuesta.put("entrevista_session_id", entrevistaSessionId);
+            respuesta.put("mensaje", "Entrevista iniciada exitosamente");
+            
+            return ResponseEntity.ok(respuesta);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));

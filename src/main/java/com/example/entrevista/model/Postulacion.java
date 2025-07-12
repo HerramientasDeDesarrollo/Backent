@@ -33,4 +33,8 @@ public class Postulacion {
     
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean preguntasGeneradas = false; // Nuevo campo para rastrear si se han generado preguntas
+    
+    // Referencia a la sesión de entrevista (nueva arquitectura)
+    @Column(name = "entrevista_session_id")
+    private Long entrevistaSessionId;
 }

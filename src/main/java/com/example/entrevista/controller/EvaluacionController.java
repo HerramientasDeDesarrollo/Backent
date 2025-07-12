@@ -3,13 +3,12 @@ package com.example.entrevista.controller;
 import com.example.entrevista.DTO.EvaluacionRequest;
 import com.example.entrevista.DTO.EvaluacionResponse;
 import com.example.entrevista.service.EvaluacionService;
+import com.example.entrevista.service.ResultadosService;
+import com.example.entrevista.service.EntrevistaSessionService;
 import com.example.entrevista.model.Pregunta;
 import com.example.entrevista.repository.PreguntaRepository;
 import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Evaluacion;
-import com.example.entrevista.model.Postulacion;
-import com.example.entrevista.repository.PostulacionRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/evaluaciones")
@@ -32,13 +31,13 @@ public class EvaluacionController {
     private EvaluacionService evaluacionService;
     
     @Autowired
-    private PreguntaRepository preguntaRepository;
+    private ResultadosService resultadosService;
     
     @Autowired
-    private PostulacionRepository postulacionRepository;
+    private EntrevistaSessionService entrevistaSessionService; // Nuevo servicio
     
     @Autowired
-    private ObjectMapper objectMapper;    
+    private PreguntaRepository preguntaRepository;    
     
     // Solo usuarios pueden evaluar sus respuestas
     @PostMapping("/evaluar")
@@ -177,108 +176,40 @@ public class EvaluacionController {
     @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verMisResultados(@PathVariable Long postulacionId) {
         try {
-            // Obtener la postulación
-            Optional<Postulacion> postulacionOpt = postulacionRepository.findById(postulacionId);
-            if (!postulacionOpt.isPresent()) {
+            logger.info("Obteniendo resultados para postulación {}", postulacionId);
+            
+            // Verificar primero si puede generar resultados
+            if (!resultadosService.puedeGenerarResultados(postulacionId)) {
+                logger.warn("La postulación {} no puede generar resultados todavía", postulacionId);
+                Map<String, Object> estadisticas = resultadosService.obtenerEstadisticasRapidas(postulacionId);
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "mensaje", "No se encontró la postulación especificada"
+                    "mensaje", "Los datos no están completos para mostrar resultados",
+                    "estadisticas", estadisticas,
+                    "requiere_evaluaciones_adicionales", true
                 ));
             }
             
-            Postulacion postulacion = postulacionOpt.get();
-            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);
+            Map<String, Object> resultados = resultadosService.obtenerResumenResultados(postulacionId);
             
-            if (evaluaciones.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "usuarioId", postulacion.getUsuario().getId(),
-                    "convocatoriaId", postulacion.getConvocatoria().getId(),
-                    "tituloConvocatoria", postulacion.getConvocatoria().getTitulo(),
-                    "mensaje", "No se encontraron evaluaciones para esta postulación"
-                ));
+            // Verificar si hay error o datos incompletos
+            if (resultados.containsKey("problemas") || 
+                (resultados.containsKey("success") && !(Boolean) resultados.get("success"))) {
+                logger.warn("Problemas detectados en postulación {}: {}", 
+                           postulacionId, resultados.get("problemas"));
+                return ResponseEntity.badRequest().body(resultados);
             }
             
-            // Calcular promedios por criterio
-            double promedioClaridadEstructura = evaluaciones.stream()
-                .mapToDouble(e -> e.getClaridadEstructura() != null ? e.getClaridadEstructura() : 0)
-                .average().orElse(0);
-                
-            double promedioDominioTecnico = evaluaciones.stream()
-                .mapToDouble(e -> e.getDominioTecnico() != null ? e.getDominioTecnico() : 0)
-                .average().orElse(0);
-                
-            double promedioPertinencia = evaluaciones.stream()
-                .mapToDouble(e -> e.getPertinencia() != null ? e.getPertinencia() : 0)
-                .average().orElse(0);
-                
-            double promedioComunicacionSeguridad = evaluaciones.stream()
-                .mapToDouble(e -> e.getComunicacionSeguridad() != null ? e.getComunicacionSeguridad() : 0)
-                .average().orElse(0);
-                
-            // Calcular puntaje final (porcentaje total obtenido)
-            double puntajeFinal = evaluaciones.stream()
-                .mapToDouble(e -> e.getPorcentajeObtenido() != null ? e.getPorcentajeObtenido() : 0)
-                .sum();
-            
-            // Recopilar todas las fortalezas y oportunidades de mejora
-            Set<String> fortalezasSet = new HashSet<>();
-            Set<String> oportunidadesSet = new HashSet<>();
-            
-            for (Evaluacion evaluacion : evaluaciones) {
-                if (evaluacion.getEvaluacionCompleta() != null) {
-                    try {
-                        Map<String, Object> evaluacionObj = objectMapper.readValue(evaluacion.getEvaluacionCompleta(), Map.class);
-                        
-                        if (evaluacionObj.containsKey("fortalezas") && evaluacionObj.get("fortalezas") instanceof List) {
-                            @SuppressWarnings("unchecked")
-                            List<String> fortalezas = (List<String>) evaluacionObj.get("fortalezas");
-                            fortalezasSet.addAll(fortalezas);
-                        }
-                        
-                        if (evaluacionObj.containsKey("oportunidades_mejora") && evaluacionObj.get("oportunidades_mejora") instanceof List) {
-                            @SuppressWarnings("unchecked")
-                            List<String> oportunidades = (List<String>) evaluacionObj.get("oportunidades_mejora");
-                            oportunidadesSet.addAll(oportunidades);
-                        }
-                    } catch (Exception e) {
-                        logger.warn("Error al parsear evaluación JSON: {}", e.getMessage());
-                    }
-                }
-            }
-            
-            // Obtener fecha de evaluación más reciente
-            Date fechaEvaluacion = evaluaciones.stream()
-                .map(Evaluacion::getFechaEvaluacion)
-                .filter(Objects::nonNull)
-                .max(Date::compareTo)
-                .orElse(new Date());
-                
-            Map<String, Object> resultados = new HashMap<>();
-            resultados.put("success", true);
-            resultados.put("usuarioId", postulacion.getUsuario().getId());
-            resultados.put("convocatoriaId", postulacion.getConvocatoria().getId());
-            resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
-            resultados.put("fechaEvaluacion", fechaEvaluacion);
-            resultados.put("puntajeFinal", Math.round(puntajeFinal * 100) / 100.0);
-            
-            Map<String, Object> resumenPorCriterio = new HashMap<>();
-            resumenPorCriterio.put("claridad_estructura", Math.round(promedioClaridadEstructura * 100) / 100.0);
-            resumenPorCriterio.put("dominio_tecnico", Math.round(promedioDominioTecnico * 100) / 100.0);
-            resumenPorCriterio.put("pertinencia", Math.round(promedioPertinencia * 100) / 100.0);
-            resumenPorCriterio.put("comunicacion_seguridad", Math.round(promedioComunicacionSeguridad * 100) / 100.0);
-            
-            resultados.put("resumenPorCriterio", resumenPorCriterio);
-            resultados.put("fortalezas", new ArrayList<>(fortalezasSet));
-            resultados.put("oportunidadesMejora", new ArrayList<>(oportunidadesSet));
-            
+            logger.info("Resultados obtenidos exitosamente para postulación {}", postulacionId);
             return ResponseEntity.ok(resultados);
+            
         } catch (Exception e) {
-            logger.error("Error al obtener resultados para postulación {}: {}", postulacionId, e.getMessage());
+            logger.error("Error al obtener resultados para postulación {}: {}", postulacionId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                     "success", false,
-                    "error", "Error al procesar la solicitud: " + e.getMessage()
+                    "error", "Error interno al procesar la solicitud: " + e.getMessage(),
+                    "postulacion_id", postulacionId
                 ));
         }
     }    
@@ -287,118 +218,40 @@ public class EvaluacionController {
     @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<?> verMisResultadosDetalle(@PathVariable Long postulacionId) {
         try {
-            // Obtener la postulación
-            Optional<Postulacion> postulacionOpt = postulacionRepository.findById(postulacionId);
-            if (!postulacionOpt.isPresent()) {
+            logger.info("Obteniendo detalles de resultados para postulación {}", postulacionId);
+            
+            // Verificar primero si puede generar resultados
+            if (!resultadosService.puedeGenerarResultados(postulacionId)) {
+                logger.warn("La postulación {} no puede generar detalles todavía", postulacionId);
+                Map<String, Object> estadisticas = resultadosService.obtenerEstadisticasRapidas(postulacionId);
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "mensaje", "No se encontró la postulación especificada"
+                    "mensaje", "Los datos no están completos para mostrar detalles",
+                    "estadisticas", estadisticas,
+                    "requiere_evaluaciones_adicionales", true
                 ));
             }
             
-            Postulacion postulacion = postulacionOpt.get();
-            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);
+            Map<String, Object> resultados = resultadosService.obtenerDetalleResultados(postulacionId);
             
-            if (evaluaciones.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "usuarioId", postulacion.getUsuario().getId(),
-                    "convocatoriaId", postulacion.getConvocatoria().getId(),
-                    "tituloConvocatoria", postulacion.getConvocatoria().getTitulo(),
-                    "mensaje", "No se encontraron evaluaciones para esta postulación",
-                    "detallePreguntas", Collections.emptyList()
-                ));
+            // Verificar si hay error o datos incompletos
+            if (resultados.containsKey("problemas") || 
+                (resultados.containsKey("success") && !(Boolean) resultados.get("success"))) {
+                logger.warn("Problemas detectados en detalles de postulación {}: {}", 
+                           postulacionId, resultados.get("problemas"));
+                return ResponseEntity.badRequest().body(resultados);
             }
             
-            // Obtener todas las preguntas para esta postulación
-            List<Pregunta> preguntas = preguntaRepository.findByPostulacionId(postulacionId);
-            
-            // Crear un mapa de pregunta -> evaluación para facilitar la búsqueda
-            Map<Long, Evaluacion> evaluacionesPorPregunta = evaluaciones.stream()
-                .filter(e -> e.getPregunta() != null)
-                .collect(Collectors.toMap(
-                    e -> e.getPregunta().getId(),
-                    e -> e,
-                    (existing, replacement) -> replacement // En caso de duplicados, quedarse con la última evaluación
-                ));
-            
-            // Preparar el detalle de preguntas con sus evaluaciones
-            List<Map<String, Object>> detallePreguntas = new ArrayList<>();
-            
-            for (Pregunta pregunta : preguntas) {
-                Map<String, Object> detallePregunta = new HashMap<>();
-                detallePregunta.put("numero", pregunta.getNumero());
-                detallePregunta.put("tipo", pregunta.getTipoLegible());
-                detallePregunta.put("pregunta", pregunta.getTextoPregunta());
-                
-                // Buscar la evaluación correspondiente
-                Evaluacion evaluacion = evaluacionesPorPregunta.get(pregunta.getId());
-                
-                if (evaluacion != null) {
-                    detallePregunta.put("respuestaUsuario", evaluacion.getRespuesta());
-                    
-                    Map<String, Object> detalleEvaluacion = new HashMap<>();
-                    detalleEvaluacion.put("claridad_estructura", evaluacion.getClaridadEstructura());
-                    detalleEvaluacion.put("dominio_tecnico", evaluacion.getDominioTecnico());
-                    detalleEvaluacion.put("pertinencia", evaluacion.getPertinencia());
-                    detalleEvaluacion.put("comunicacion_seguridad", evaluacion.getComunicacionSeguridad());
-                    detalleEvaluacion.put("puntuacion_final", evaluacion.getPorcentajeObtenido());
-                    
-                    // Extraer fortalezas y oportunidades de mejora del JSON
-                    List<String> fortalezas = Collections.emptyList();
-                    List<String> oportunidadesMejora = Collections.emptyList();
-                    
-                    if (evaluacion.getEvaluacionCompleta() != null) {
-                        try {
-                            Map<String, Object> evaluacionObj = objectMapper.readValue(
-                                evaluacion.getEvaluacionCompleta(), Map.class);
-                            
-                            if (evaluacionObj.containsKey("fortalezas") && evaluacionObj.get("fortalezas") instanceof List) {
-                                @SuppressWarnings("unchecked")
-                                List<String> fortList = (List<String>) evaluacionObj.get("fortalezas");
-                                fortalezas = fortList;
-                            }
-                            
-                            if (evaluacionObj.containsKey("oportunidades_mejora") && 
-                                evaluacionObj.get("oportunidades_mejora") instanceof List) {
-                                @SuppressWarnings("unchecked")
-                                List<String> opList = (List<String>) evaluacionObj.get("oportunidades_mejora");
-                                oportunidadesMejora = opList;
-                            }
-                        } catch (Exception e) {
-                            logger.warn("Error al parsear evaluación JSON: {}", e.getMessage());
-                        }
-                    }
-                    
-                    detalleEvaluacion.put("fortalezas", fortalezas);
-                    detalleEvaluacion.put("oportunidades_mejora", oportunidadesMejora);
-                    
-                    detallePregunta.put("evaluacion", detalleEvaluacion);
-                } else {
-                    detallePregunta.put("respuestaUsuario", "No se ha registrado respuesta");
-                    detallePregunta.put("evaluacion", null);
-                }
-                
-                detallePreguntas.add(detallePregunta);
-            }
-            
-            // Ordenar por número de pregunta
-            detallePreguntas.sort(Comparator.comparing(m -> (Integer) m.get("numero")));
-            
-            Map<String, Object> resultados = new HashMap<>();
-            resultados.put("success", true);
-            resultados.put("usuarioId", postulacion.getUsuario().getId());
-            resultados.put("convocatoriaId", postulacion.getConvocatoria().getId());
-            resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
-            resultados.put("detallePreguntas", detallePreguntas);
-            
+            logger.info("Detalles de resultados obtenidos exitosamente para postulación {}", postulacionId);
             return ResponseEntity.ok(resultados);
+            
         } catch (Exception e) {
-            logger.error("Error al obtener detalles para postulación {}: {}", postulacionId, e.getMessage());
+            logger.error("Error al obtener detalles para postulación {}: {}", postulacionId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                     "success", false,
-                    "error", "Error al procesar la solicitud: " + e.getMessage()
+                    "error", "Error interno al procesar la solicitud: " + e.getMessage(),
+                    "postulacion_id", postulacionId
                 ));
         }
     }    
@@ -407,25 +260,8 @@ public class EvaluacionController {
     @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<?> verResultadosPorEntrevista(@PathVariable Long entrevistaId) {
         try {
-            List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorEntrevista(entrevistaId);
-            
-            if (evaluaciones.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                    "mensaje", "No se encontraron evaluaciones para este entrevistador",
-                    "evaluaciones", evaluaciones
-                ));
-            }
-            
-            // Agrupar evaluaciones por postulación para presentar resultados organizados
-            Map<Long, List<Evaluacion>> evaluacionesPorPostulacion = evaluaciones.stream()
-                .collect(Collectors.groupingBy(e -> 
-                    e.getPostulacion() != null ? e.getPostulacion().getId() : 0L));
-                    
-            return ResponseEntity.ok(Map.of(
-                "mensaje", "Resultados encontrados",
-                "totalPostulaciones", evaluacionesPorPostulacion.size(),
-                "totalEvaluaciones", evaluaciones.size(),
-                "resultadosPorPostulacion", evaluacionesPorPostulacion            ));
+            Map<String, Object> resultados = resultadosService.obtenerResultadosPorEntrevista(entrevistaId);
+            return ResponseEntity.ok(resultados);
         } catch (Exception e) {
             logger.error("Error al obtener resultados para entrevistador {}: {}", entrevistaId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -444,6 +280,42 @@ public class EvaluacionController {
             logger.error("Error al obtener evaluaciones para postulación {}: {}", postulacionId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Error al procesar la solicitud: " + e.getMessage()));
+        }
+    }
+
+    // Endpoint para verificar el estado de una postulación antes de mostrar resultados
+    @GetMapping("/verificar-estado/{postulacionId}")
+    @PreAuthorize("hasRole('USUARIO') or hasRole('EMPRESA')")
+    public ResponseEntity<?> verificarEstadoPostulacion(@PathVariable Long postulacionId) {
+        try {
+            Map<String, Object> verificacion = resultadosService.verificarIntegridadDatos(postulacionId);
+            
+            // Agregar información de diagnóstico básico
+            boolean valida = (Boolean) verificacion.getOrDefault("valida", false);
+            
+            if (!valida) {
+                logger.warn("Postulación {} tiene problemas de integridad: {}", postulacionId, verificacion.get("advertencias"));
+                return ResponseEntity.ok(Map.of(
+                    "estado", "PROBLEMAS_DETECTADOS",
+                    "puede_mostrar_resultados", false,
+                    "detalles", verificacion
+                ));
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "estado", "DISPONIBLE",
+                "puede_mostrar_resultados", true,
+                "detalles", verificacion
+            ));
+            
+        } catch (Exception e) {
+            logger.error("Error verificando estado de postulación {}: {}", postulacionId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "estado", "ERROR",
+                    "puede_mostrar_resultados", false,
+                    "error", "Error al verificar estado: " + e.getMessage()
+                ));
         }
     }
 }
