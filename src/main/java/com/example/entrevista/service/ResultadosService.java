@@ -320,7 +320,7 @@ public class ResultadosService {
         respuesta.put("success", true);
         respuesta.put("usuarioId", postulacion.getUsuario().getId());
         respuesta.put("convocatoriaId", postulacion.getConvocatoria().getId());
-        respuesta.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
+        respuesta.put("tituloConvocatoria", postulacion.getConvocatoria().getJobTitle());
         respuesta.put("mensaje", "No se encontraron evaluaciones para esta postulación");
         return respuesta;
     }
@@ -330,7 +330,7 @@ public class ResultadosService {
         respuesta.put("success", true);
         respuesta.put("usuarioId", postulacion.getUsuario().getId());
         respuesta.put("convocatoriaId", postulacion.getConvocatoria().getId());
-        respuesta.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
+        respuesta.put("tituloConvocatoria", postulacion.getConvocatoria().getJobTitle());
         respuesta.put("mensaje", "No se encontraron evaluaciones para esta postulación");
         respuesta.put("detallePreguntas", Collections.emptyList());
         return respuesta;
@@ -353,7 +353,7 @@ public class ResultadosService {
         resultados.put("success", true);
         resultados.put("usuarioId", postulacion.getUsuario().getId());
         resultados.put("convocatoriaId", postulacion.getConvocatoria().getId());
-        resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
+        resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getJobTitle());
         resultados.put("fechaEvaluacion", fechaEvaluacion);
         resultados.put("puntajeFinal", redondear(puntajeFinal));
         
@@ -387,7 +387,7 @@ public class ResultadosService {
         resultados.put("success", true);
         resultados.put("usuarioId", postulacion.getUsuario().getId());
         resultados.put("convocatoriaId", postulacion.getConvocatoria().getId());
-        resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getTitulo());
+        resultados.put("tituloConvocatoria", postulacion.getConvocatoria().getJobTitle());
         resultados.put("detallePreguntas", detallePreguntas);
         
         return resultados;

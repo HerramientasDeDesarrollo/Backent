@@ -134,7 +134,7 @@ public class EvaluacionController {
         // Get puesto from convocatoria if available
         if (pregunta.getConvocatoria() != null) {
             Convocatoria convocatoria = pregunta.getConvocatoria();
-            request.setPuesto(convocatoria.getPuesto());
+            request.setPuesto(convocatoria.getJobTitle());
         } else {
             throw new IllegalArgumentException("La pregunta no tiene una convocatoria con puesto especificado");
         }

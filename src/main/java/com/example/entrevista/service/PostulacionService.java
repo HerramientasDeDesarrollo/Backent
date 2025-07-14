@@ -4,6 +4,7 @@ import com.example.entrevista.model.EstadoPostulacion;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.model.Usuario;
 import com.example.entrevista.model.EntrevistaSession;
+import com.example.entrevista.DTO.PostulacionResponseDTO;
 import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.repository.UsuarioRepository;
 
@@ -49,6 +50,10 @@ public class PostulacionService {
 
     public List<Postulacion> listarPorUsuario(Long usuarioId) {
         return postulacionRepository.findByUsuarioId(usuarioId);
+    }
+
+    public List<Postulacion> listarPorEmail(String email) {
+        return postulacionRepository.findByUsuarioEmail(email);
     }
 
     public List<Postulacion> listarPorConvocatoria(Long convocatoriaId) {
@@ -155,5 +160,36 @@ public class PostulacionService {
         postulacionRepository.save(postulacion);
         
         return nuevaSesion.getId();
+    }
+    
+    /**
+     * Convierte una entidad Postulacion a PostulacionResponseDTO
+     * para evitar problemas de serialización con lazy loading
+     */
+    public PostulacionResponseDTO convertToResponseDTO(Postulacion postulacion) {
+        PostulacionResponseDTO dto = new PostulacionResponseDTO();
+        dto.setId(postulacion.getId());
+        dto.setEstado(postulacion.getEstado());
+        dto.setPreguntasGeneradas(postulacion.isPreguntasGeneradas());
+        dto.setEntrevistaSessionId(postulacion.getEntrevistaSessionId());
+        
+        // Safely extract user information
+        if (postulacion.getUsuario() != null) {
+            dto.setUsuarioId(postulacion.getUsuario().getId());
+            dto.setUsuarioNombre(postulacion.getUsuario().getNombre());
+        }
+        
+        // Safely extract convocatoria information
+        if (postulacion.getConvocatoria() != null) {
+            dto.setConvocatoriaId(postulacion.getConvocatoria().getId());
+            dto.setConvocatoriaTitulo(postulacion.getConvocatoria().getJobTitle());
+            
+            // Safely extract empresa information
+            if (postulacion.getConvocatoria().getEmpresa() != null) {
+                dto.setEmpresaNombre(postulacion.getConvocatoria().getEmpresa().getNombre());
+            }
+        }
+        
+        return dto;
     }
 }

@@ -18,4 +18,6 @@ public interface PostulacionRepository extends JpaRepository<Postulacion, Long> 
     List<Postulacion> findByUsuarioIdAndEstado(Long usuarioId, EstadoPostulacion estado);
     
     List<Postulacion> findByConvocatoriaIdAndEstado(Long convocatoriaId, EstadoPostulacion estado);
+    
+    List<Postulacion> findByUsuarioEmail(String email);
 }

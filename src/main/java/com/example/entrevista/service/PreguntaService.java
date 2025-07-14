@@ -102,14 +102,14 @@ public class PreguntaService {
             logger.error("La postulación {} no tiene una convocatoria asociada", request.getIdPostulacion());
             throw new RuntimeException("La postulación no tiene una convocatoria asociada");
         }
-        logger.debug("Convocatoria encontrada: {} ({})", convocatoria.getTitulo(), convocatoria.getId());
+        logger.debug("Convocatoria encontrada: {} ({})", convocatoria.getJobTitle(), convocatoria.getId());
         
         // Obtener la dificultad directamente de la convocatoria
         int dificultad = convocatoria.getDificultad();
         logger.info("Usando dificultad {} de la convocatoria", dificultad);
         
         // Establecer los valores que faltan en el request
-        request.setPuesto(convocatoria.getPuesto());
+        request.setPuesto(convocatoria.getJobTitle());
         request.setIdConvocatoria(convocatoria.getId());
         
         String nivelDificultad = obtenerDescripcionDificultad(dificultad);

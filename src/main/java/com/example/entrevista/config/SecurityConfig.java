@@ -58,7 +58,8 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))            .authorizeHttpRequests(auth -> auth
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 
@@ -75,14 +76,15 @@ public class SecurityConfig {
                 // Usuarios - Postulaciones y entrevistas
                 .requestMatchers(HttpMethod.GET, "/api/convocatorias/activas").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/postulaciones").hasRole("USUARIO")
-                .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasRole("USUARIO")
-                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/iniciar-entrevista").hasRole("USUARIO") // NUEVO
-                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/completar-entrevista").hasRole("USUARIO") // NUEVO
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/usuario/**").hasAnyRole("USUARIO", "EMPRESA")
+                .requestMatchers(HttpMethod.GET, "/api/postulaciones/mis-postulaciones").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/iniciar-entrevista").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/completar-entrevista").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/preguntas/generar").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.GET, "/api/preguntas/postulacion/**").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.POST, "/api/evaluaciones/evaluar").hasRole("USUARIO")
                 .requestMatchers(HttpMethod.GET, "/api/evaluaciones/mis-resultados/**").hasRole("USUARIO")
-                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/marcar-preguntas-generadas").hasRole("USUARIO") // NUEVO
+                .requestMatchers(HttpMethod.PATCH, "/api/postulaciones/*/marcar-preguntas-generadas").hasRole("USUARIO")
                 
                 // Ambos roles pueden ver detalles específicos
                 .requestMatchers(HttpMethod.GET, "/api/convocatorias/*").hasAnyRole("USUARIO", "EMPRESA")

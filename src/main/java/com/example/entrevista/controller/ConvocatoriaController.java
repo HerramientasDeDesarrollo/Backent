@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/convocatorias")
@@ -322,6 +323,62 @@ public class ConvocatoriaController {
         }
     }
     
+    // Obtener todas las convocatorias (Nueva API)
+    @GetMapping("/v2")
+    @PreAuthorize("hasRole('USUARIO') or hasRole('EMPRESA')")
+    public ResponseEntity<?> listarTodasV2(
+            @RequestParam(defaultValue = "false") boolean soloActivas,
+            @RequestParam(required = false) String categoria,
+            @RequestParam(required = false) String modalidad,
+            @RequestParam(required = false) String experiencia) {
+        try {
+            List<ConvocatoriaResponseDTO> convocatorias;
+            
+            if (soloActivas) {
+                convocatorias = convocatoriaService.listarActivas();
+            } else {
+                convocatorias = convocatoriaService.listarTodas();
+            }
+            
+            // Aplicar filtros adicionales si se proporcionan
+            if (categoria != null && !categoria.isEmpty()) {
+                convocatorias = convocatorias.stream()
+                    .filter(c -> c.getCategory().name().equalsIgnoreCase(categoria))
+                    .collect(Collectors.toList());
+            }
+            
+            if (modalidad != null && !modalidad.isEmpty()) {
+                convocatorias = convocatorias.stream()
+                    .filter(c -> c.getWorkMode().name().equalsIgnoreCase(modalidad))
+                    .collect(Collectors.toList());
+            }
+            
+            if (experiencia != null && !experiencia.isEmpty()) {
+                convocatorias = convocatorias.stream()
+                    .filter(c -> c.getExperienceLevel().name().equalsIgnoreCase(experiencia))
+                    .collect(Collectors.toList());
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", convocatorias,
+                "total", convocatorias.size(),
+                "filtros", Map.of(
+                    "soloActivas", soloActivas,
+                    "categoria", categoria != null ? categoria : "todas",
+                    "modalidad", modalidad != null ? modalidad : "todas",
+                    "experiencia", experiencia != null ? experiencia : "todas"
+                )
+            ));
+        } catch (Exception e) {
+            logger.error("Error al listar todas las convocatorias: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "error", "Error interno del servidor"
+            ));
+        }
+    }
+
     // === ENDPOINTS LEGACY PARA COMPATIBILIDAD ===
     
     // Legacy: Solo empresas pueden crear convocatorias
