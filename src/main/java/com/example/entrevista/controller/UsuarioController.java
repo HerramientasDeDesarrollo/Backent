@@ -28,6 +28,8 @@ public class UsuarioController {
         usuario.setNombre(usuarioCreateDTO.getNombre());
         usuario.setApellidoPaterno(usuarioCreateDTO.getApellidoPaterno());
         usuario.setApellidoMaterno(usuarioCreateDTO.getApellidoMaterno());
+        usuario.setNacimiento(usuarioCreateDTO.getNacimiento());
+        usuario.setTelefono(usuarioCreateDTO.getTelefono());
         usuario.setPassword(usuarioCreateDTO.getPassword());
         usuario.setRol(usuarioCreateDTO.getRol());
         
@@ -40,6 +42,8 @@ public class UsuarioController {
         response.setNombre(usuarioCreado.getNombre());
         response.setApellidoPaterno(usuarioCreado.getApellidoPaterno());
         response.setApellidoMaterno(usuarioCreado.getApellidoMaterno());
+        response.setNacimiento(usuarioCreado.getNacimiento());
+        response.setTelefono(usuarioCreado.getTelefono());
         response.setRol(usuarioCreado.getRol());
         
         return ResponseEntity.ok(response);
@@ -57,6 +61,8 @@ public class UsuarioController {
                     response.setNombre(usuario.getNombre());
                     response.setApellidoPaterno(usuario.getApellidoPaterno());
                     response.setApellidoMaterno(usuario.getApellidoMaterno());
+                    response.setNacimiento(usuario.getNacimiento());
+                    response.setTelefono(usuario.getTelefono());
                     response.setRol(usuario.getRol());
                     return ResponseEntity.ok(response);
                 })
@@ -84,6 +90,8 @@ public class UsuarioController {
                     dto.setNombre(usuario.getNombre());
                     dto.setApellidoPaterno(usuario.getApellidoPaterno());
                     dto.setApellidoMaterno(usuario.getApellidoMaterno());
+                    dto.setNacimiento(usuario.getNacimiento());
+                    dto.setTelefono(usuario.getTelefono());
                     dto.setRol(usuario.getRol());
                     return dto;
                 })
