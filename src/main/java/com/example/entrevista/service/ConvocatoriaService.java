@@ -2,9 +2,6 @@ package com.example.entrevista.service;
 
 import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Empresa;
-import com.example.entrevista.model.Category;
-import com.example.entrevista.model.ExperienceLevel;
-import com.example.entrevista.model.WorkMode;
 import com.example.entrevista.DTO.ConvocatoriaCreateDTO;
 import com.example.entrevista.DTO.ConvocatoriaResponseDTO;
 import com.example.entrevista.repository.ConvocatoriaRepository;

@@ -124,6 +124,12 @@
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 		
+		<!-- Spring Boot Mail Starter for Email Verification -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		
 		<!-- Jakarta Persistence API (for compatibility) -->
 		<dependency>
 			<groupId>jakarta.persistence</groupId>

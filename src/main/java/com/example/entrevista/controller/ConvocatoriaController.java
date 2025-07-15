@@ -1,6 +1,5 @@
 package com.example.entrevista.controller;
 
-import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Category;
 import com.example.entrevista.model.ExperienceLevel;
 import com.example.entrevista.model.WorkMode;
