@@ -25,7 +25,8 @@ public class PreguntaController {
                 return ResponseEntity.badRequest().body("El ID de postulación es obligatorio");
             }
             
-            PreguntaResponse response = preguntaService.generarPreguntas(request);
+            // Usar el nuevo método que incluye tracking de respuestas
+            PreguntaResponse response = preguntaService.generarPreguntasConEstado(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest()

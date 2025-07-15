@@ -5,9 +5,13 @@ import com.example.entrevista.DTO.PreguntaResponse;
 import com.example.entrevista.repository.PreguntaRepository;
 import com.example.entrevista.repository.ConvocatoriaRepository;
 import com.example.entrevista.repository.PostulacionRepository;
+import com.example.entrevista.repository.EntrevistaSessionRepository;
 import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Pregunta;
 import com.example.entrevista.model.Postulacion;
+import com.example.entrevista.model.EntrevistaSession;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +53,12 @@ public class PreguntaService {
 
     @Autowired
     private PostulacionRepository postulacionRepository;
+    
+    @Autowired
+    private EntrevistaSessionRepository entrevistaSessionRepository;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public PreguntaResponse generarPreguntas(PreguntaRequest request) {
         logger.info(ANSI_CYAN + "Iniciando proceso de generación de preguntas para postulación ID: {}" + ANSI_RESET, request.getIdPostulacion());
@@ -231,6 +241,111 @@ public class PreguntaService {
         logger.info(ANSI_GREEN + "✓ Proceso de generación de preguntas completado exitosamente" + ANSI_RESET);
         response.setMensaje("Las preguntas se han generado por primera vez para esta postulación."); // Añadir mensaje
         return response;
+    }
+    
+    // Nuevo método que incluye tracking de respuestas
+    public PreguntaResponse generarPreguntasConEstado(PreguntaRequest request) {
+        logger.info(ANSI_CYAN + "Generando preguntas con estado de respuestas para postulación ID: {}" + ANSI_RESET, request.getIdPostulacion());
+        
+        // Primero generar/obtener las preguntas usando el método existente
+        PreguntaResponse baseResponse = generarPreguntas(request);
+        
+        if (!baseResponse.isSuccess()) {
+            return baseResponse; // Si hay error, retornar tal como está
+        }
+        
+        // Obtener la postulación
+        Postulacion postulacion = postulacionRepository.findById(request.getIdPostulacion())
+            .orElseThrow(() -> new RuntimeException("Postulación no encontrada"));
+        
+        // Buscar EntrevistaSession si existe
+        Optional<EntrevistaSession> sessionOpt = entrevistaSessionRepository.findByPostulacionId(request.getIdPostulacion());
+        
+        // Obtener preguntas de la base de datos con IDs
+        List<Pregunta> preguntasDB = preguntaRepository.findByPostulacionId(request.getIdPostulacion());
+        
+        // Enriquecer los DTOs con información de estado
+        List<PreguntaResponse.PreguntaDTO> preguntasEnriquecidas = new ArrayList<>();
+        Map<String, Boolean> estadoRespuestas = new HashMap<>();
+        int preguntasRespondidas = 0;
+        
+        for (int i = 0; i < baseResponse.getQuestions().size() && i < preguntasDB.size(); i++) {
+            PreguntaResponse.PreguntaDTO dto = baseResponse.getQuestions().get(i);
+            Pregunta preguntaDB = preguntasDB.get(i);
+            
+            // Establecer ID de la pregunta
+            dto.setId(preguntaDB.getId());
+            
+            // Verificar si está respondida en EntrevistaSession
+            boolean respondida = false;
+            String respuesta = null;
+            String fechaRespuesta = null;
+            
+            if (sessionOpt.isPresent() && sessionOpt.get().getRespuestasJson() != null) {
+                try {
+                    Map<String, Object> respuestas = objectMapper.readValue(
+                        sessionOpt.get().getRespuestasJson(), 
+                        new TypeReference<Map<String, Object>>() {}
+                    );
+                    
+                    String keyRespuesta = "pregunta_" + preguntaDB.getId();
+                    if (respuestas.containsKey(keyRespuesta)) {
+                        respondida = true;
+                        preguntasRespondidas++;
+                        
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> detalleRespuesta = (Map<String, Object>) respuestas.get(keyRespuesta);
+                        respuesta = (String) detalleRespuesta.get("respuesta");
+                        fechaRespuesta = (String) detalleRespuesta.get("timestamp");
+                    }
+                } catch (Exception e) {
+                    logger.warn("Error al procesar respuestas JSON: {}", e.getMessage());
+                }
+            }
+            
+            // Establecer estado en el DTO
+            dto.setRespondida(respondida);
+            dto.setRespuesta(respuesta);
+            dto.setFechaRespuesta(fechaRespuesta);
+            
+            // Por ahora, evaluada = false (podrías expandir esto para verificar evaluaciones)
+            dto.setEvaluada(false);
+            
+            // Agregar al mapa de estado
+            estadoRespuestas.put(preguntaDB.getId().toString(), respondida);
+            
+            preguntasEnriquecidas.add(dto);
+        }
+        
+        // Calcular estadísticas
+        int totalPreguntas = preguntasEnriquecidas.size();
+        int preguntasPendientes = totalPreguntas - preguntasRespondidas;
+        double progresoRespuestas = totalPreguntas > 0 ? (double) preguntasRespondidas / totalPreguntas * 100 : 0;
+        
+        // Actualizar la respuesta con información de estado
+        baseResponse.setQuestions(preguntasEnriquecidas);
+        baseResponse.setTotalPreguntas(totalPreguntas);
+        baseResponse.setPreguntasRespondidas(preguntasRespondidas);
+        baseResponse.setPreguntasPendientes(preguntasPendientes);
+        baseResponse.setProgresoRespuestas(Math.round(progresoRespuestas * 100.0) / 100.0);
+        baseResponse.setEstadoRespuestas(estadoRespuestas);
+        
+        // Agregar EntrevistaSession ID si existe
+        if (sessionOpt.isPresent()) {
+            baseResponse.setEntrevistaSessionId(sessionOpt.get().getId());
+        } else if (postulacion.getEntrevistaSessionId() != null) {
+            baseResponse.setEntrevistaSessionId(postulacion.getEntrevistaSessionId());
+        }
+        
+        // Actualizar mensaje
+        String mensajeEstado = String.format("Preguntas cargadas: %d total, %d respondidas (%.1f%% progreso)", 
+            totalPreguntas, preguntasRespondidas, progresoRespuestas);
+        baseResponse.setMensaje(baseResponse.getMensaje() + " " + mensajeEstado);
+        
+        logger.info(ANSI_GREEN + "✓ Preguntas generadas con estado: {} total, {} respondidas" + ANSI_RESET, 
+            totalPreguntas, preguntasRespondidas);
+        
+        return baseResponse;
     }
 
     // Métodos para obtener preguntas
