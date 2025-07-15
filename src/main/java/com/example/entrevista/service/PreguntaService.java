@@ -6,10 +6,12 @@ import com.example.entrevista.repository.PreguntaRepository;
 import com.example.entrevista.repository.ConvocatoriaRepository;
 import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.repository.EntrevistaSessionRepository;
+import com.example.entrevista.repository.EvaluacionRepository;
 import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Pregunta;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.model.EntrevistaSession;
+import com.example.entrevista.model.Evaluacion;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -56,6 +58,9 @@ public class PreguntaService {
     
     @Autowired
     private EntrevistaSessionRepository entrevistaSessionRepository;
+    
+    @Autowired
+    private EvaluacionRepository evaluacionRepository;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -258,11 +263,23 @@ public class PreguntaService {
         Postulacion postulacion = postulacionRepository.findById(request.getIdPostulacion())
             .orElseThrow(() -> new RuntimeException("Postulación no encontrada"));
         
-        // Buscar EntrevistaSession si existe
-        Optional<EntrevistaSession> sessionOpt = entrevistaSessionRepository.findByPostulacionId(request.getIdPostulacion());
-        
         // Obtener preguntas de la base de datos con IDs
         List<Pregunta> preguntasDB = preguntaRepository.findByPostulacionId(request.getIdPostulacion());
+        
+        // Buscar EntrevistaSession si existe (para el ID de sesión)
+        Optional<EntrevistaSession> sessionOpt = entrevistaSessionRepository.findByPostulacionId(request.getIdPostulacion());
+        
+        // Obtener evaluaciones de la postulación para verificar qué preguntas han sido respondidas
+        List<Evaluacion> evaluaciones = evaluacionRepository.findByPostulacionId(request.getIdPostulacion());
+        
+        // Crear un mapa pregunta_id -> evaluacion para búsqueda rápida
+        Map<Long, Evaluacion> evaluacionesPorPregunta = evaluaciones.stream()
+            .filter(eval -> eval.getPregunta() != null)
+            .collect(Collectors.toMap(
+                eval -> eval.getPregunta().getId(),
+                eval -> eval,
+                (existing, replacement) -> existing // En caso de duplicados, mantener el primero
+            ));
         
         // Enriquecer los DTOs con información de estado
         List<PreguntaResponse.PreguntaDTO> preguntasEnriquecidas = new ArrayList<>();
@@ -276,40 +293,32 @@ public class PreguntaService {
             // Establecer ID de la pregunta
             dto.setId(preguntaDB.getId());
             
-            // Verificar si está respondida en EntrevistaSession
-            boolean respondida = false;
+            // Verificar si está respondida usando la tabla Evaluacion
+            Evaluacion evaluacion = evaluacionesPorPregunta.get(preguntaDB.getId());
+            boolean respondida = evaluacion != null;
+            boolean evaluada = false;
             String respuesta = null;
             String fechaRespuesta = null;
             
-            if (sessionOpt.isPresent() && sessionOpt.get().getRespuestasJson() != null) {
-                try {
-                    Map<String, Object> respuestas = objectMapper.readValue(
-                        sessionOpt.get().getRespuestasJson(), 
-                        new TypeReference<Map<String, Object>>() {}
-                    );
-                    
-                    String keyRespuesta = "pregunta_" + preguntaDB.getId();
-                    if (respuestas.containsKey(keyRespuesta)) {
-                        respondida = true;
-                        preguntasRespondidas++;
-                        
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> detalleRespuesta = (Map<String, Object>) respuestas.get(keyRespuesta);
-                        respuesta = (String) detalleRespuesta.get("respuesta");
-                        fechaRespuesta = (String) detalleRespuesta.get("timestamp");
-                    }
-                } catch (Exception e) {
-                    logger.warn("Error al procesar respuestas JSON: {}", e.getMessage());
-                }
+            if (evaluacion != null) {
+                preguntasRespondidas++;
+                respuesta = evaluacion.getRespuesta();
+                fechaRespuesta = evaluacion.getFechaEvaluacion() != null ? 
+                    evaluacion.getFechaEvaluacion().toString() : null;
+                
+                // Verificar si la evaluación está completa (tiene todos los campos evaluados)
+                evaluada = evaluacion.getClaridadEstructura() != null && 
+                          evaluacion.getDominioTecnico() != null && 
+                          evaluacion.getPertinencia() != null && 
+                          evaluacion.getComunicacionSeguridad() != null &&
+                          evaluacion.getPorcentajeObtenido() != null;
             }
             
             // Establecer estado en el DTO
             dto.setRespondida(respondida);
             dto.setRespuesta(respuesta);
             dto.setFechaRespuesta(fechaRespuesta);
-            
-            // Por ahora, evaluada = false (podrías expandir esto para verificar evaluaciones)
-            dto.setEvaluada(false);
+            dto.setEvaluada(evaluada);
             
             // Agregar al mapa de estado
             estadoRespuestas.put(preguntaDB.getId().toString(), respondida);
