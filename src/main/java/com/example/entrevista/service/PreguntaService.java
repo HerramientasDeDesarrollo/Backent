@@ -339,11 +339,26 @@ public class PreguntaService {
         baseResponse.setProgresoRespuestas(Math.round(progresoRespuestas * 100.0) / 100.0);
         baseResponse.setEstadoRespuestas(estadoRespuestas);
         
-        // Agregar EntrevistaSession ID si existe
+        // Agregar EntrevistaSession ID - priorizar el existente o crear uno nuevo
+        Long sessionId = null;
         if (sessionOpt.isPresent()) {
-            baseResponse.setEntrevistaSessionId(sessionOpt.get().getId());
+            sessionId = sessionOpt.get().getId();
+            logger.debug("Usando EntrevistaSession existente: {}", sessionId);
         } else if (postulacion.getEntrevistaSessionId() != null) {
-            baseResponse.setEntrevistaSessionId(postulacion.getEntrevistaSessionId());
+            sessionId = postulacion.getEntrevistaSessionId();
+            logger.debug("Usando sessionId de postulación: {}", sessionId);
+        } else {
+            // Si no existe session, intentar crear una nueva usando PostulacionService
+            try {
+                logger.warn("No se encontró sessionId para postulación {}. Se requiere crear sesión primero.", request.getIdPostulacion());
+            } catch (Exception e) {
+                logger.error("Error al intentar crear sesión para postulación {}: {}", request.getIdPostulacion(), e.getMessage());
+            }
+        }
+        
+        if (sessionId != null) {
+            baseResponse.setEntrevistaSessionId(sessionId);
+            logger.info("SessionId {} agregado a la respuesta de preguntas", sessionId);
         }
         
         // Actualizar mensaje

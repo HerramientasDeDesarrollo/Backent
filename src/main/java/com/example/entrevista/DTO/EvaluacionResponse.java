@@ -18,6 +18,7 @@ public class EvaluacionResponse {
     private Long id;
     private Long preguntaId;
     private Long postulacionId;
+    private Long entrevistaSessionId;  // ✨ Nuevo campo para session ID
     private String pregunta;
     private String respuesta;
     private Date fechaEvaluacion;

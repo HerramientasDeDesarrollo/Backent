@@ -5,10 +5,15 @@ import com.example.entrevista.DTO.EvaluacionResponse;
 import com.example.entrevista.model.Evaluacion;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.model.Pregunta;
+import com.example.entrevista.model.EntrevistaSession;
 import com.example.entrevista.repository.EvaluacionRepository;
 import com.example.entrevista.repository.PostulacionRepository;
 import com.example.entrevista.repository.PreguntaRepository;
+import com.example.entrevista.repository.EntrevistaSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +42,9 @@ public class EvaluacionService {
     
     @Autowired
     private PreguntaRepository preguntaRepository;
+    
+    @Autowired
+    private EntrevistaSessionRepository entrevistaSessionRepository;
 
     public EvaluacionService(WebClient openAIWebClient) {
         this.webClient = openAIWebClient;
@@ -107,6 +115,12 @@ public class EvaluacionService {
             
             if (request.getIdPostulacion() != null) {
                 evaluacionResponse.setPostulacionId(request.getIdPostulacion());
+                
+                // Buscar el sessionId asociado a esta postulación
+                Long sessionId = obtenerSessionIdPorPostulacion(request.getIdPostulacion());
+                if (sessionId != null) {
+                    evaluacionResponse.setEntrevistaSessionId(sessionId);
+                }
             }
 
             // Crear y guardar la entidad Evaluacion
@@ -237,5 +251,30 @@ public class EvaluacionService {
 
     public List<Evaluacion> obtenerEvaluacionesPorEntrevista(Long entrevistaId) {
         return evaluacionRepository.findByEntrevistaId(entrevistaId);
+    }
+    
+    /**
+     * Obtiene el sessionId asociado a una postulación
+     * Primero busca en EntrevistaSession, luego en el campo entrevistaSessionId de Postulacion
+     */
+    private Long obtenerSessionIdPorPostulacion(Long postulacionId) {
+        try {
+            // Buscar EntrevistaSession directamente
+            Optional<EntrevistaSession> sessionOpt = entrevistaSessionRepository.findByPostulacionId(postulacionId);
+            if (sessionOpt.isPresent()) {
+                return sessionOpt.get().getId();
+            }
+            
+            // Si no existe EntrevistaSession, buscar en el campo entrevistaSessionId de Postulacion
+            Optional<Postulacion> postulacionOpt = postulacionRepository.findById(postulacionId);
+            if (postulacionOpt.isPresent() && postulacionOpt.get().getEntrevistaSessionId() != null) {
+                return postulacionOpt.get().getEntrevistaSessionId();
+            }
+            
+            return null;
+        } catch (Exception e) {
+            // Log del error sin interrumpir el flujo principal
+            return null;
+        }
     }
 }

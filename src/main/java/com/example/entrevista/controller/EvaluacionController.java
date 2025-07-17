@@ -6,9 +6,14 @@ import com.example.entrevista.service.EvaluacionService;
 import com.example.entrevista.service.ResultadosService;
 import com.example.entrevista.service.EntrevistaSessionService;
 import com.example.entrevista.model.Pregunta;
+import com.example.entrevista.model.Postulacion;
+import com.example.entrevista.model.EntrevistaSession;
 import com.example.entrevista.repository.PreguntaRepository;
+import com.example.entrevista.repository.PostulacionRepository;
+import com.example.entrevista.repository.EntrevistaSessionRepository;
 import com.example.entrevista.model.Convocatoria;
 import com.example.entrevista.model.Evaluacion;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/evaluaciones")
@@ -37,7 +43,16 @@ public class EvaluacionController {
     private EntrevistaSessionService entrevistaSessionService; // Nuevo servicio
     
     @Autowired
-    private PreguntaRepository preguntaRepository;    
+    private PreguntaRepository preguntaRepository;
+    
+    @Autowired
+    private PostulacionRepository postulacionRepository;
+    
+    @Autowired
+    private EntrevistaSessionRepository entrevistaSessionRepository;
+    
+    @Autowired
+    private ObjectMapper objectMapper;    
     
     // Solo usuarios pueden evaluar sus respuestas
     @PostMapping("/evaluar")
@@ -317,5 +332,181 @@ public class EvaluacionController {
                     "error", "Error al verificar estado: " + e.getMessage()
                 ));
         }
+    }
+    
+    // Nuevo endpoint para obtener todas las preguntas y evaluaciones de un usuario
+    @GetMapping("/historial-completo/{postulacionId}")
+    @PreAuthorize("hasRole('USUARIO')")
+    public ResponseEntity<?> obtenerHistorialCompleto(@PathVariable Long postulacionId) {
+        try {
+            logger.info("Obteniendo historial completo de preguntas y evaluaciones para postulación {}", postulacionId);
+            
+            Map<String, Object> historial = construirHistorialCompleto(postulacionId);
+            
+            logger.info("Historial completo obtenido exitosamente para postulación {}", postulacionId);
+            return ResponseEntity.ok(historial);
+            
+        } catch (Exception e) {
+            logger.error("Error al obtener historial completo para postulación {}: {}", postulacionId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "success", false,
+                    "error", "Error interno al procesar la solicitud: " + e.getMessage(),
+                    "postulacion_id", postulacionId
+                ));
+        }
+    }
+    
+    /**
+     * Construye un historial completo con todas las preguntas y sus evaluaciones
+     */
+    private Map<String, Object> construirHistorialCompleto(Long postulacionId) {
+        // Obtener la postulación
+        Optional<Postulacion> postulacionOpt = postulacionRepository.findById(postulacionId);
+        if (postulacionOpt.isEmpty()) {
+            throw new RuntimeException("Postulación no encontrada con ID: " + postulacionId);
+        }
+        
+        Postulacion postulacion = postulacionOpt.get();
+        
+        // Obtener todas las preguntas de la postulación
+        List<Pregunta> preguntas = preguntaRepository.findByPostulacionId(postulacionId);
+        
+        // Obtener todas las evaluaciones de la postulación
+        List<Evaluacion> evaluaciones = evaluacionService.obtenerEvaluacionesPorPostulacion(postulacionId);
+        
+        // Crear mapa de evaluaciones por pregunta ID
+        Map<Long, Evaluacion> evaluacionesPorPregunta = evaluaciones.stream()
+            .filter(eval -> eval.getPregunta() != null)
+            .collect(Collectors.toMap(
+                eval -> eval.getPregunta().getId(),
+                eval -> eval,
+                (existing, replacement) -> existing // En caso de duplicados, mantener el primero
+            ));
+        
+        // Buscar EntrevistaSession ID
+        Long sessionId = null;
+        Optional<EntrevistaSession> sessionOpt = entrevistaSessionRepository.findByPostulacionId(postulacionId);
+        if (sessionOpt.isPresent()) {
+            sessionId = sessionOpt.get().getId();
+        } else if (postulacion.getEntrevistaSessionId() != null) {
+            sessionId = postulacion.getEntrevistaSessionId();
+        }
+        
+        // Construir el historial de preguntas con sus evaluaciones
+        List<Map<String, Object>> historialPreguntas = new ArrayList<>();
+        
+        for (Pregunta pregunta : preguntas) {
+            Map<String, Object> preguntaData = new HashMap<>();
+            
+            // Datos de la pregunta
+            preguntaData.put("preguntaId", pregunta.getId());
+            preguntaData.put("numero", pregunta.getNumero());
+            preguntaData.put("textoPregunta", pregunta.getTextoPregunta());
+            preguntaData.put("tipo", pregunta.getTipo());
+            preguntaData.put("tipoLegible", pregunta.getTipoLegible());
+            preguntaData.put("score", pregunta.getScore());
+            
+            // Buscar evaluación asociada
+            Evaluacion evaluacion = evaluacionesPorPregunta.get(pregunta.getId());
+            
+            if (evaluacion != null) {
+                // Hay evaluación - pregunta respondida
+                preguntaData.put("respondida", true);
+                preguntaData.put("evaluada", true);
+                preguntaData.put("respuestaUsuario", evaluacion.getRespuesta());
+                preguntaData.put("fechaRespuesta", evaluacion.getFechaEvaluacion());
+                
+                // Datos de la evaluación
+                Map<String, Object> datosEvaluacion = new HashMap<>();
+                datosEvaluacion.put("claridadEstructura", evaluacion.getClaridadEstructura());
+                datosEvaluacion.put("dominioTecnico", evaluacion.getDominioTecnico());
+                datosEvaluacion.put("pertinencia", evaluacion.getPertinencia());
+                datosEvaluacion.put("comunicacionSeguridad", evaluacion.getComunicacionSeguridad());
+                datosEvaluacion.put("puntajeTotal", evaluacion.getPuntajeTotal());
+                datosEvaluacion.put("porcentajeObtenido", evaluacion.getPorcentajeObtenido());
+                
+                // Parsear JSON de evaluación completa si existe
+                if (evaluacion.getEvaluacionCompleta() != null) {
+                    try {
+                        Map<String, Object> evaluacionCompleta = objectMapper.readValue(
+                            evaluacion.getEvaluacionCompleta(), Map.class);
+                        
+                        // Extraer fortalezas y oportunidades
+                        datosEvaluacion.put("fortalezas", evaluacionCompleta.get("fortalezas"));
+                        datosEvaluacion.put("oportunidadesMejora", evaluacionCompleta.get("oportunidades_mejora"));
+                        datosEvaluacion.put("feedback", evaluacionCompleta.get("feedback_detallado"));
+                        
+                    } catch (Exception e) {
+                        logger.warn("No se pudo parsear evaluación completa para pregunta {}: {}", 
+                                   pregunta.getId(), e.getMessage());
+                    }
+                }
+                
+                preguntaData.put("evaluacion", datosEvaluacion);
+                
+            } else {
+                // No hay evaluación - pregunta no respondida
+                preguntaData.put("respondida", false);
+                preguntaData.put("evaluada", false);
+                preguntaData.put("respuestaUsuario", null);
+                preguntaData.put("fechaRespuesta", null);
+                preguntaData.put("evaluacion", null);
+            }
+            
+            historialPreguntas.add(preguntaData);
+        }
+        
+        // Ordenar por número de pregunta
+        historialPreguntas.sort(Comparator.comparing(p -> (Integer) p.get("numero")));
+        
+        // Calcular estadísticas generales
+        int totalPreguntas = preguntas.size();
+        int preguntasRespondidas = evaluaciones.size();
+        int preguntasPendientes = totalPreguntas - preguntasRespondidas;
+        double progresoRespuestas = totalPreguntas > 0 ? (double) preguntasRespondidas / totalPreguntas * 100 : 0;
+        
+        // Calcular puntaje total obtenido
+        double puntajeTotalObtenido = evaluaciones.stream()
+            .filter(eval -> eval.getPorcentajeObtenido() != null)
+            .mapToDouble(Evaluacion::getPorcentajeObtenido)
+            .sum();
+        
+        // Construir respuesta final
+        Map<String, Object> historial = new HashMap<>();
+        historial.put("success", true);
+        historial.put("postulacionId", postulacionId);
+        historial.put("entrevistaSessionId", sessionId);
+        
+        // Información de la postulación
+        Map<String, Object> infoPostulacion = new HashMap<>();
+        infoPostulacion.put("estado", postulacion.getEstado().toString());
+        infoPostulacion.put("preguntasGeneradas", postulacion.isPreguntasGeneradas());
+        
+        if (postulacion.getConvocatoria() != null) {
+            infoPostulacion.put("convocatoria", Map.of(
+                "id", postulacion.getConvocatoria().getId(),
+                "titulo", postulacion.getConvocatoria().getJobTitle(),
+                "dificultad", postulacion.getConvocatoria().getDificultad()
+            ));
+        }
+        
+        historial.put("postulacion", infoPostulacion);
+        
+        // Estadísticas generales
+        Map<String, Object> estadisticas = new HashMap<>();
+        estadisticas.put("totalPreguntas", totalPreguntas);
+        estadisticas.put("preguntasRespondidas", preguntasRespondidas);
+        estadisticas.put("preguntasPendientes", preguntasPendientes);
+        estadisticas.put("progresoRespuestas", Math.round(progresoRespuestas * 100.0) / 100.0);
+        estadisticas.put("puntajeTotalObtenido", Math.round(puntajeTotalObtenido * 100.0) / 100.0);
+        estadisticas.put("puntajeMaximoPosible", 100.0);
+        
+        historial.put("estadisticas", estadisticas);
+        
+        // Historial detallado de preguntas y evaluaciones
+        historial.put("preguntas", historialPreguntas);
+        
+        return historial;
     }
 }
