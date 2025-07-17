@@ -13,9 +13,9 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // Configuración actualizada para ser compatible con allowCredentials
+                // Configuración abierta para permitir acceso desde cualquier origen
                 registry.addMapping("/**")
-                        .allowedOriginPatterns("http://localhost:*", "https://localhost:*", "http://127.0.0.1:*")
+                        .allowedOriginPatterns("*")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true);
