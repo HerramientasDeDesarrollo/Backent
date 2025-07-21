@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -31,7 +32,7 @@ public class EmpresaController {
     
     // Permitir creación de empresas (registro público) + Verificación automática
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Empresa empresa, HttpServletRequest request) {
+    public ResponseEntity<?> crear(@Valid @RequestBody Empresa empresa, HttpServletRequest request) {
         try {
             logger.info("Iniciando registro de empresa: {}", empresa.getEmail());
             
@@ -71,6 +72,22 @@ public class EmpresaController {
                 "email", empresaCreada.getEmail()
             ));
             
+        } catch (RuntimeException e) {
+            logger.error("Error al crear empresa: {}", e.getMessage());
+            
+            // Verificar si es error de email duplicado
+            if (e.getMessage().contains("ya está registrado")) {
+                return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "error", e.getMessage(),
+                    "errorType", "DUPLICATE_EMAIL"
+                ));
+            }
+            
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                "success", false,
+                "error", "Error al crear empresa: " + e.getMessage()
+            ));
         } catch (Exception e) {
             logger.error("Error al crear empresa: {}", e.getMessage());
             return ResponseEntity.status(500).body(java.util.Map.of(

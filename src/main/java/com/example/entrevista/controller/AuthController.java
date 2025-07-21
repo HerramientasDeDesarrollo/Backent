@@ -169,6 +169,17 @@ public class AuthController {
         logger.info("Solicitud de código de verificación para: {} tipo: {}", request.getEmail(), request.getUserType());
         
         try {
+            // VALIDAR SI EL EMAIL YA ESTÁ REGISTRADO
+            boolean isRegisteredUser = userDetailsService.findUsuarioByEmail(request.getEmail()) != null;
+            boolean isRegisteredEmpresa = userDetailsService.findEmpresaByEmail(request.getEmail()) != null;
+            
+            if (isRegisteredUser || isRegisteredEmpresa) {
+                logger.warn("Intento de envío de código a email ya registrado: {}", request.getEmail());
+                return ResponseEntity.badRequest().body(
+                    EmailVerificationResponse.error("Este email ya está registrado. Usa la opción de login para acceder a tu cuenta.")
+                );
+            }
+            
             // Verificar si el usuario puede solicitar un nuevo código
             if (!emailVerificationService.canRequestNewCode(request.getEmail())) {
                 int remaining = emailVerificationService.getRemainingAttempts(request.getEmail());
@@ -185,31 +196,11 @@ public class AuthController {
                 );
             }
             
-            // Obtener IP del cliente
-            String clientIp = getClientIpAddress(httpRequest);
-            
-            // Crear código de verificación (método actualizado)
-            EmailVerification verification = emailVerificationService.createVerificationCode(
-                request.getEmail(), 
-                clientIp
-            );
-            
-            // Enviar email (ORDEN CORREGIDO)
-            emailService.sendVerificationEmail(
-                verification.getEmail(),           // toEmail
-                verification.getVerificationCode(), // verificationCode
-                verification.getDisplayName(),     // userName
-                verification.getUserType()         // userType
-            );
-            
-            // Respuesta exitosa
-            int remaining = emailVerificationService.getRemainingAttempts(request.getEmail());
-            long minutesUntilExpiry = emailVerificationService.getMinutesUntilExpiry(request.getEmail());
-            
-            logger.info("Código de verificación enviado exitosamente a: {}", request.getEmail());
-            
-            return ResponseEntity.ok(
-                EmailVerificationResponse.codeSent(request.getEmail(), remaining, minutesUntilExpiry)
+            // NOTA: No se puede crear código para emails no registrados aún
+            // Este endpoint debe usarse solo DESPUÉS del registro
+            logger.info("Email {} no está registrado aún. Debe registrarse primero.", request.getEmail());
+            return ResponseEntity.badRequest().body(
+                EmailVerificationResponse.error("Email no encontrado. Debes registrarse primero antes de solicitar verificación.")
             );
             
         } catch (Exception e) {

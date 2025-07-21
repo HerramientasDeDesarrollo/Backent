@@ -2,20 +2,25 @@ package com.example.entrevista.controller;
 
 import com.example.entrevista.DTO.UsuarioCreateDTO;
 import com.example.entrevista.DTO.UsuarioResponseDTO;
+import com.example.entrevista.DTO.ApiResponse;
+import com.example.entrevista.enums.ErrorType;
 import com.example.entrevista.model.Usuario;
 import com.example.entrevista.service.UsuarioService;
 import com.example.entrevista.service.EmailVerificationService;
 import com.example.entrevista.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -34,7 +39,7 @@ public class UsuarioController {
 
     // Permitir creación de usuarios (registro público) + Verificación automática
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody UsuarioCreateDTO usuarioCreateDTO, 
+    public ResponseEntity<ApiResponse<Map<String, Object>>> crear(@Valid @RequestBody UsuarioCreateDTO usuarioCreateDTO, 
                                    HttpServletRequest request) {
         try {
             logger.info("Iniciando registro de usuario: {}", usuarioCreateDTO.getEmail());
@@ -88,21 +93,45 @@ public class UsuarioController {
             response.setTelefono(usuarioCreado.getTelefono());
             response.setRol(usuarioCreado.getRol());
             
-            // Respuesta con información de verificación
-            return ResponseEntity.ok(java.util.Map.of(
-                "success", true,
-                "message", "Usuario registrado exitosamente. Se ha enviado un código de verificación a tu email.",
+            // Crear datos de respuesta
+            Map<String, Object> responseData = Map.of(
                 "user", response,
                 "requiresEmailVerification", true,
                 "email", usuarioCreado.getEmail()
-            ));
+            );
+            
+            // Respuesta exitosa usando ApiResponse
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.created(
+                responseData, 
+                "Usuario registrado exitosamente. Se ha enviado un código de verificación a tu email."
+            );
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
+            
+        } catch (RuntimeException e) {
+            logger.error("Error al crear usuario: {}", e.getMessage());
+            
+            // Verificar si es error de email duplicado
+            if (e.getMessage().contains("ya está registrado")) {
+                ApiResponse<Map<String, Object>> apiResponse = ApiResponse.badRequest(
+                    e.getMessage(), 
+                    ErrorType.DUPLICATE_EMAIL
+                );
+                return ResponseEntity.badRequest().body(apiResponse);
+            }
+            
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.badRequest(
+                "Error al crear usuario: " + e.getMessage(),
+                ErrorType.INVALID_REQUEST
+            );
+            return ResponseEntity.badRequest().body(apiResponse);
             
         } catch (Exception e) {
-            logger.error("Error al crear usuario: {}", e.getMessage());
-            return ResponseEntity.status(500).body(java.util.Map.of(
-                "success", false,
-                "error", "Error al crear usuario: " + e.getMessage()
-            ));
+            logger.error("Error interno al crear usuario: {}", e.getMessage());
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.internalError(
+                "Error interno del servidor"
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
         }
     }
     
@@ -126,7 +155,7 @@ public class UsuarioController {
     // Solo usuarios pueden ver su propio perfil
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USUARIO') and #id == authentication.principal.id")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UsuarioResponseDTO>> buscarPorId(@PathVariable Long id) {
         return usuarioService.buscarPorId(id)
                 .map(usuario -> {
                     UsuarioResponseDTO response = new UsuarioResponseDTO();
@@ -138,9 +167,20 @@ public class UsuarioController {
                     response.setNacimiento(usuario.getNacimiento());
                     response.setTelefono(usuario.getTelefono());
                     response.setRol(usuario.getRol());
-                    return ResponseEntity.ok(response);
+                    
+                    ApiResponse<UsuarioResponseDTO> apiResponse = ApiResponse.success(
+                        response, 
+                        "Usuario encontrado"
+                    );
+                    return ResponseEntity.ok(apiResponse);
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> {
+                    ApiResponse<UsuarioResponseDTO> apiResponse = ApiResponse.notFound(
+                        "Usuario no encontrado", 
+                        ErrorType.USER_NOT_FOUND
+                    );
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
+                });
     }
 
     // Para autenticación - permitir búsqueda por email (mantener Usuario para autenticación)
@@ -154,7 +194,7 @@ public class UsuarioController {
     // Solo admins pueden listar todos los usuarios
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
+    public ResponseEntity<ApiResponse<List<UsuarioResponseDTO>>> listarTodos() {
         List<Usuario> usuarios = usuarioService.listarTodos();
         List<UsuarioResponseDTO> response = usuarios.stream()
                 .map(usuario -> {
@@ -171,6 +211,10 @@ public class UsuarioController {
                 })
                 .collect(Collectors.toList());
         
-        return ResponseEntity.ok(response);
+        ApiResponse<List<UsuarioResponseDTO>> apiResponse = ApiResponse.success(
+            response,
+            "Usuarios obtenidos exitosamente"
+        );
+        return ResponseEntity.ok(apiResponse);
     }
 }

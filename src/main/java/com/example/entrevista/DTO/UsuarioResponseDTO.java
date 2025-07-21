@@ -17,6 +17,6 @@ public class UsuarioResponseDTO {
     private String apellidoPaterno;
     private String apellidoMaterno;
     private Date nacimiento;
-    private int telefono;
+    private String telefono; // Cambiado de int a String
     private Rol rol;
 }

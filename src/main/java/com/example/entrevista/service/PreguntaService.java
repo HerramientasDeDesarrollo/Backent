@@ -12,7 +12,6 @@ import com.example.entrevista.model.Pregunta;
 import com.example.entrevista.model.Postulacion;
 import com.example.entrevista.model.EntrevistaSession;
 import com.example.entrevista.model.Evaluacion;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
